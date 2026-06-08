@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Profile from "./pages/Profile.tsx";
 import Plans from "./pages/Plans.tsx";
+import PlanDetail from "./pages/PlanDetail.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/app" element={<Plans />} />
             <Route path="/plans" element={<Plans />} />
+            <Route path="/plans/:id" element={<PlanDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
