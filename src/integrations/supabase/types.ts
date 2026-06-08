@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      plan_participants: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_participants_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          max_participants: number
+          plan_time: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          max_participants?: number
+          plan_time?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          max_participants?: number
+          plan_time?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           availability: string[]
