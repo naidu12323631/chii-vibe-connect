@@ -23,6 +23,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/app" element={<Plans />} />
+            <Route path="/plans" element={<Plans />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
