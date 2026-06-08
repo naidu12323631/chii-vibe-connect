@@ -26,6 +26,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/app" element={<Plans />} />
             <Route path="/plans" element={<Plans />} />
+            <Route path="/plans/:id" element={<PlanDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
