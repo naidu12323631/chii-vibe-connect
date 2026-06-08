@@ -31,7 +31,7 @@ const Auth = () => {
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
-    if (!authLoading && user) navigate("/", { replace: true });
+    if (!authLoading && user) navigate("/app", { replace: true });
   }, [user, authLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -41,7 +41,7 @@ const Auth = () => {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Welcome back!");
-    navigate("/", { replace: true });
+    navigate("/app", { replace: true });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -58,7 +58,7 @@ const Auth = () => {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Account created! You're in.");
-    navigate("/", { replace: true });
+    navigate("/app", { replace: true });
   };
 
   const handleGoogle = async () => {
@@ -71,7 +71,7 @@ const Auth = () => {
       return toast.error("Could not sign in with Google");
     }
     if (result.redirected) return;
-    navigate("/", { replace: true });
+    navigate("/app", { replace: true });
   };
 
   return (
