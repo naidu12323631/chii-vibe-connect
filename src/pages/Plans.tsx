@@ -204,7 +204,7 @@ const Plans = () => {
                   transition={{ duration: 0.3, delay: i * 0.04 }}
                   className="bg-card border border-border rounded-3xl p-6 shadow-sm hover:shadow-md transition-all"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-4 cursor-pointer" onClick={() => navigate(`/plans/${plan.id}`)}>
                     <div className="h-11 w-11 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
                       {(plan.profile?.display_name ?? "U")[0]?.toUpperCase()}
                     </div>
@@ -220,19 +220,23 @@ const Plans = () => {
                         {plan.plan_time && <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {new Date(plan.plan_time).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</span>}
                         <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {plan.participants.length}/{plan.max_participants}</span>
                       </div>
-                      {!isOwner && (
-                        <Button
-                          variant={joined ? "outline" : "gradient"}
-                          size="sm"
-                          className="mt-4"
-                          onClick={() => handleJoin(plan)}
-                          disabled={!joined && full}
-                        >
-                          {joined ? "Leave" : full ? "Full" : "Join plan"}
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-3 mt-4">
+                        <span className="text-xs font-medium text-primary flex items-center gap-1">View details <ArrowRight className="h-3 w-3" /></span>
+                      </div>
                     </div>
                   </div>
+                  {!isOwner && (
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        variant={joined ? "outline" : "gradient"}
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); handleJoin(plan); }}
+                        disabled={!joined && full}
+                      >
+                        {joined ? "Leave" : full ? "Full" : "Join plan"}
+                      </Button>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
