@@ -8,7 +8,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Profile from "./pages/Profile.tsx";
 import Plans from "./pages/Plans.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import PlanDetail from "./pages/PlanDetail.tsx";
 
 const queryClient = new QueryClient();
 
