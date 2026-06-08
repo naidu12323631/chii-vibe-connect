@@ -9,6 +9,7 @@ import Auth from "./pages/Auth.tsx";
 import Profile from "./pages/Profile.tsx";
 import Plans from "./pages/Plans.tsx";
 import PlanDetail from "./pages/PlanDetail.tsx";
+import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
