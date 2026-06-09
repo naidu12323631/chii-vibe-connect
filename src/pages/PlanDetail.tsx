@@ -118,7 +118,8 @@ const PlanDetail = () => {
           <Link to="/app" className="text-xl font-extrabold tracking-tight">
             <span className="text-gradient">chillout</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <NotificationsBell />
             <Link to="/profile" className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm hover:opacity-90">{initial}</Link>
             <Button variant="ghost" size="sm" onClick={handleSignOut}><LogOut className="h-4 w-4" /></Button>
           </div>
