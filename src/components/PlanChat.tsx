@@ -91,12 +91,20 @@ const PlanChat = ({
     const text = content.trim();
     if (!text || sending) return;
     setSending(true);
-    const { error } = await supabase
+    const { data: inserted, error } = await supabase
       .from("plan_messages")
-      .insert({ plan_id: planId, user_id: currentUserId, content: text });
+      .insert({ plan_id: planId, user_id: currentUserId, content: text })
+      .select("id")
+      .single();
     setSending(false);
     if (error) return toast.error(error.message);
     setContent("");
+    // Fire-and-forget push fan-out
+    supabase.functions
+      .invoke("send-plan-push", {
+        body: { plan_id: planId, message_id: inserted?.id, sender_id: currentUserId, content: text },
+      })
+      .catch(() => { /* non-blocking */ });
   };
 
   if (!canChat) {
