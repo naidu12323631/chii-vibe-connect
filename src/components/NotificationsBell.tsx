@@ -1,11 +1,13 @@
-import { Bell } from "lucide-react";
+import { Bell, BellOff, BellRing } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications } from "@/hooks/useNotifications";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const NotificationsBell = () => {
   const { notifications, unreadCount, markAllRead, clear } = useNotifications();
+  const push = usePushNotifications();
   const navigate = useNavigate();
 
   return (
