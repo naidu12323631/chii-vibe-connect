@@ -205,6 +205,21 @@ const PlanDetail = () => {
               {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : joined ? "Leave plan" : full ? "Plan is full" : "Join plan"}
             </Button>
           )}
+
+          <div className="mt-8">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Chat</h2>
+            <PlanChat
+              planId={plan.id}
+              currentUserId={user.id}
+              canChat={isOwner || joined}
+              profilesById={Object.fromEntries(
+                [
+                  ...(host ? [[host.id, host]] : []),
+                  ...participants.map((p) => [p.id, p]),
+                ] as [string, Profile][],
+              )}
+            />
+          </div>
         </motion.div>
       </div>
     </div>
