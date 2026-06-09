@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, Loader2, LogOut, MapPin, Users } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import PlanChat from "@/components/PlanChat";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null };
 type Plan = {
