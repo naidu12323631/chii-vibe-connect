@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, Loader2, LogOut, MapPin, Users } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import PlanChat from "@/components/PlanChat";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null };
 type Plan = {
@@ -204,6 +205,21 @@ const PlanDetail = () => {
               {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : joined ? "Leave plan" : full ? "Plan is full" : "Join plan"}
             </Button>
           )}
+
+          <div className="mt-8">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Chat</h2>
+            <PlanChat
+              planId={plan.id}
+              currentUserId={user.id}
+              canChat={isOwner || joined}
+              profilesById={Object.fromEntries(
+                [
+                  ...(host ? [[host.id, host]] : []),
+                  ...participants.map((p) => [p.id, p]),
+                ] as [string, Profile][],
+              )}
+            />
+          </div>
         </motion.div>
       </div>
     </div>
