@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import PlanChat from "@/components/PlanChat";
+import NotificationsBell from "@/components/NotificationsBell";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null };
 type Plan = {
