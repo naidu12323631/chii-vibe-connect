@@ -29,6 +29,33 @@ const NotificationsBell = () => {
             <button onClick={clear} className="text-xs text-muted-foreground hover:text-foreground">Clear all</button>
           )}
         </div>
+        {push.supported && (
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3 bg-accent/30">
+            <div className="min-w-0">
+              <div className="text-sm font-medium flex items-center gap-1.5">
+                {push.subscribed ? <BellRing className="h-3.5 w-3.5 text-primary" /> : <BellOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                Push alerts
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {push.status === "denied"
+                  ? "Blocked — enable in browser settings"
+                  : push.subscribed
+                  ? "On — you'll be alerted even when chillout is closed"
+                  : "Get notified when the app is closed"}
+              </p>
+            </div>
+            {push.status !== "denied" && (
+              <Button
+                size="sm"
+                variant={push.subscribed ? "outline" : "gradient"}
+                disabled={push.busy}
+                onClick={push.subscribed ? push.disable : push.enable}
+              >
+                {push.subscribed ? "Off" : "Enable"}
+              </Button>
+            )}
+          </div>
+        )}
         <div className="max-h-80 overflow-y-auto">
           {notifications.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">You're all caught up 🎉</p>
