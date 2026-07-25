@@ -33,6 +33,7 @@ const VideoChat = () => {
   const lobbyRef = useRef<RealtimeChannel | null>(null);
   const pairRef = useRef<RealtimeChannel | null>(null);
   const onlineRef = useRef<RealtimeChannel | null>(null);
+  const roomRef = useRef<string | null>(null);
   const partnerRef = useRef<string | null>(null);
   const initiatorRef = useRef(false);
   const offerSentRef = useRef(false);
@@ -110,6 +111,7 @@ const VideoChat = () => {
     teardownPeer();
     offerSentRef.current = false;
     partnerRef.current = null;
+    roomRef.current = null;
     if (pairRef.current) {
       supabase.removeChannel(pairRef.current);
       pairRef.current = null;
@@ -132,6 +134,7 @@ const VideoChat = () => {
     setStatus("connected");
 
     const name = `video-pair-${[myId.current, partnerId].sort().join("-")}`;
+    roomRef.current = name;
     const pair = supabase.channel(name, {
       config: { broadcast: { self: false }, presence: { key: myId.current } },
     });
@@ -307,6 +310,17 @@ const VideoChat = () => {
     pairRef.current?.send({ type: "broadcast", event: "chat", payload: { text } });
     setMessages((m) => [...m, { id: msgId.current++, text, mine: true, time: nowTime() }]);
     setDraft("");
+    // Persist to the dedicated table. Each client stores its own sent messages,
+    // so the two sides together form the full transcript. Fire-and-forget — a
+    // storage hiccup must never block the live chat.
+    if (roomRef.current) {
+      supabase
+        .from("video_chat_messages")
+        .insert({ room: roomRef.current, sender_id: myId.current, content: text })
+        .then(({ error }) => {
+          if (error) console.error("[video chat] store message failed:", error);
+        });
+    }
   };
 
   // ----------------------------------------------------------------- view

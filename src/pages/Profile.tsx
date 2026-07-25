@@ -57,12 +57,29 @@ const Profile = () => {
     if (!user) return;
     (async () => {
       try {
-        const { data, error } = await supabase
+        // maybeSingle() returns null (not a 406) when the row is missing.
+        let { data, error } = await supabase
           .from("profiles")
           .select("id, display_name, avatar_url, bio, interests, availability")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
         if (error) throw error;
+
+        // Self-heal: accounts created before the signup trigger existed have no
+        // profile row yet. Create a default one so the page works.
+        if (!data) {
+          const { data: created, error: insErr } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              display_name: user.display_name ?? user.email?.split("@")[0] ?? null,
+            })
+            .select("id, display_name, avatar_url, bio, interests, availability")
+            .single();
+          if (insErr) throw insErr;
+          data = created;
+        }
+
         setDisplayName(data.display_name ?? "");
         setBio(data.bio ?? "");
         setInterests((data.interests as string[]) ?? []);
@@ -101,14 +118,14 @@ const Profile = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          id: user.id,
           display_name: parsed.data.display_name,
           bio: parsed.data.bio ?? null,
           interests: parsed.data.interests,
           availability: parsed.data.availability,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+        });
       if (error) throw error;
       toast.success("Profile saved");
     } catch (err) {
