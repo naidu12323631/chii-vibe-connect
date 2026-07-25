@@ -69,17 +69,17 @@ export const usePushNotifications = () => {
         toast.error("Couldn't read subscription");
         return;
       }
-      const { error } = await supabase.from("push_subscriptions").upsert(
+      await supabase.from("push_subscriptions").upsert(
         {
           user_id: user.id,
           endpoint: json.endpoint,
           p256dh: json.keys.p256dh,
           auth: json.keys.auth,
           user_agent: navigator.userAgent,
+          updated_at: new Date().toISOString(),
         },
         { onConflict: "endpoint" },
       );
-      if (error) { toast.error(error.message); return; }
       setSubscribed(true);
       toast.success("Push notifications enabled");
     } catch (e: any) {

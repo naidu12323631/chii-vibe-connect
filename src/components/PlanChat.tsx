@@ -4,9 +4,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import type { PlanMessage } from "@/integrations/supabase/types";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null };
-type Message = { id: string; plan_id: string; user_id: string; content: string; created_at: string };
+type Message = PlanMessage;
 
 const Bubble = ({ name, url }: { name: string | null; url?: string | null }) => {
   const initial = (name ?? "U")[0]?.toUpperCase();
@@ -43,40 +44,41 @@ const PlanChat = ({
   }, []);
 
   useEffect(() => {
+    if (!canChat) return;
     let active = true;
     (async () => {
-      const { data, error } = await supabase
-        .from("plan_messages")
-        .select("*")
-        .eq("plan_id", planId)
-        .order("created_at", { ascending: true });
-      if (!active) return;
-      if (error) toast.error(error.message);
-      else setMessages((data ?? []) as Message[]);
-      setLoading(false);
-      scrollToBottom();
+      try {
+        const { data, error } = await supabase
+          .from("plan_messages")
+          .select("id, plan_id, user_id, content, created_at")
+          .eq("plan_id", planId)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        if (!active) return;
+        setMessages(data ?? []);
+      } catch (err) {
+        if (active) toast.error(err instanceof Error ? err.message : "Could not load chat");
+      } finally {
+        if (active) {
+          setLoading(false);
+          scrollToBottom();
+        }
+      }
     })();
 
+    // Subscribe to new messages for this plan via Postgres change events.
     const channel = supabase
-      .channel(`plan-messages-${planId}`)
+      .channel(`plan-messages:${planId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "plan_messages", filter: `plan_id=eq.${planId}` },
         (payload) => {
+          const m = payload.new as Message;
           setMessages((prev) => {
-            const m = payload.new as Message;
             if (prev.some((x) => x.id === m.id)) return prev;
             return [...prev, m];
           });
           scrollToBottom();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "plan_messages", filter: `plan_id=eq.${planId}` },
-        (payload) => {
-          const m = payload.old as Message;
-          setMessages((prev) => prev.filter((x) => x.id !== m.id));
         },
       )
       .subscribe();
@@ -85,26 +87,25 @@ const PlanChat = ({
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [planId, scrollToBottom]);
+  }, [planId, canChat, scrollToBottom]);
 
   const send = async () => {
     const text = content.trim();
     if (!text || sending) return;
     setSending(true);
-    const { data: inserted, error } = await supabase
-      .from("plan_messages")
-      .insert({ plan_id: planId, user_id: currentUserId, content: text })
-      .select("id")
-      .single();
-    setSending(false);
-    if (error) return toast.error(error.message);
-    setContent("");
-    // Fire-and-forget push fan-out
-    supabase.functions
-      .invoke("send-plan-push", {
-        body: { plan_id: planId, message_id: inserted?.id, sender_id: currentUserId, content: text },
-      })
-      .catch(() => { /* non-blocking */ });
+    try {
+      // The realtime subscription appends the new row back (with dedup),
+      // so we don't optimistically append here.
+      const { error } = await supabase
+        .from("plan_messages")
+        .insert({ plan_id: planId, user_id: currentUserId, content: text });
+      if (error) throw error;
+      setContent("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send message");
+    } finally {
+      setSending(false);
+    }
   };
 
   if (!canChat) {
@@ -128,10 +129,10 @@ const PlanChat = ({
             const prof = profilesById[m.user_id];
             return (
               <div key={m.id} className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-                <Bubble name={prof?.display_name ?? null} url={prof?.avatar_url} />
+                <Bubble name={prof?.display_name ?? m.sender_name ?? null} url={prof?.avatar_url} />
                 <div className={`max-w-[75%] ${mine ? "items-end" : "items-start"} flex flex-col`}>
                   <div className="text-[11px] text-muted-foreground px-1">
-                    {prof?.display_name ?? "Member"} · {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {prof?.display_name ?? m.sender_name ?? "Member"} · {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
                   <div
                     className={`px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap break-words ${

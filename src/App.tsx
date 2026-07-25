@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
 import Index from "./pages/Index.tsx";
+import VideoChat from "./pages/VideoChat.tsx";
 import Auth from "./pages/Auth.tsx";
 import Profile from "./pages/Profile.tsx";
 import Plans from "./pages/Plans.tsx";
@@ -24,6 +25,7 @@ const App = () => (
           <NotificationsProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/chat" element={<VideoChat />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/app" element={<Plans />} />

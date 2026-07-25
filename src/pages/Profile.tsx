@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import type { Profile as ProfileData } from "@/integrations/supabase/types";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,19 +56,22 @@ const Profile = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("display_name, bio, interests, availability")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (error) toast.error(error.message);
-      if (data) {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url, bio, interests, availability")
+          .eq("id", user.id)
+          .single();
+        if (error) throw error;
         setDisplayName(data.display_name ?? "");
         setBio(data.bio ?? "");
-        setInterests(data.interests ?? []);
-        setAvailability(data.availability ?? []);
+        setInterests((data.interests as string[]) ?? []);
+        setAvailability((data.availability as string[]) ?? []);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not load profile");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [user]);
 
@@ -94,18 +98,24 @@ const Profile = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        display_name: parsed.data.display_name,
-        bio: parsed.data.bio ?? null,
-        interests: parsed.data.interests,
-        availability: parsed.data.availability,
-      })
-      .eq("id", user.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Profile saved");
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          display_name: parsed.data.display_name,
+          bio: parsed.data.bio ?? null,
+          interests: parsed.data.interests,
+          availability: parsed.data.availability,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+      if (error) throw error;
+      toast.success("Profile saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -243,7 +253,7 @@ const Profile = () => {
           </Card>
 
           <div className="flex justify-end gap-3 sticky bottom-4">
-            <Button variant="outline" onClick={() => navigate("/")}>Cancel</Button>
+            <Button variant="outline" onClick={() => navigate("/app")}>Back to plans</Button>
             <Button variant="gradient" size="lg" onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Save profile

@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import type { PlanMessage } from "@/integrations/supabase/types";
 
 type Notification = {
   id: string;
@@ -32,9 +33,6 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
   const navigate = useNavigate();
   const location = useLocation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const membershipRef = useRef<Set<string>>(new Set());
-  const planTitlesRef = useRef<Record<string, string>>({});
-  const profileNamesRef = useRef<Record<string, string>>({});
   const locationRef = useRef(location);
   locationRef.current = location;
 
@@ -54,63 +52,54 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
     } catch { /* ignore */ }
   }, [notifications, user]);
 
-  const refreshMemberships = useCallback(async () => {
-    if (!user) return;
-    const [{ data: hosted }, { data: joined }] = await Promise.all([
-      supabase.from("plans").select("id, title").eq("user_id", user.id),
-      supabase.from("plan_participants").select("plan_id, plans(id, title)").eq("user_id", user.id),
-    ]);
-    const set = new Set<string>();
-    const titles: Record<string, string> = {};
-    (hosted ?? []).forEach((p: any) => { set.add(p.id); titles[p.id] = p.title; });
-    (joined ?? []).forEach((row: any) => {
-      if (row.plan_id) set.add(row.plan_id);
-      if (row.plans) titles[row.plans.id] = row.plans.title;
-    });
-    membershipRef.current = set;
-    planTitlesRef.current = { ...planTitlesRef.current, ...titles };
-  }, [user]);
-
+  // Listen for new messages via Supabase Realtime. RLS ("messages_read") only
+  // lets a user SELECT messages for plans they belong to, and Realtime honors
+  // RLS — so we only receive INSERTs for our own plans. We just skip our own
+  // messages and look up the plan title + sender name for the toast.
   useEffect(() => {
     if (!user) return;
-    refreshMemberships();
 
-    const msgChannel = supabase
-      .channel(`notifications-${user.id}`)
+    // Small caches so we don't re-query titles/names on every message.
+    const titleCache = new Map<string, string>();
+    const nameCache = new Map<string, string>();
+
+    const lookupTitle = async (planId: string) => {
+      if (titleCache.has(planId)) return titleCache.get(planId)!;
+      const { data } = await supabase.from("plans").select("title").eq("id", planId).single();
+      const title = data?.title ?? "your plan";
+      titleCache.set(planId, title);
+      return title;
+    };
+    const lookupName = async (userId: string) => {
+      if (nameCache.has(userId)) return nameCache.get(userId)!;
+      const { data } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
+      const name = data?.display_name ?? "Someone";
+      nameCache.set(userId, name);
+      return name;
+    };
+
+    const channel = supabase
+      .channel("notifications")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "plan_messages" },
         async (payload) => {
-          const m = payload.new as { id: string; plan_id: string; user_id: string; content: string; created_at: string };
-          if (m.user_id === user.id) return;
-          if (!membershipRef.current.has(m.plan_id)) {
-            await refreshMemberships();
-            if (!membershipRef.current.has(m.plan_id)) return;
-          }
+          const m = payload.new as PlanMessage;
+          if (m.user_id === user.id) return; // ignore our own messages
 
-          // Suppress if user is viewing that plan's detail page
           const match = matchPath("/plans/:id", locationRef.current.pathname);
           const onThisPlan = match?.params?.id === m.plan_id;
 
-          let title = planTitlesRef.current[m.plan_id];
-          if (!title) {
-            const { data: p } = await supabase.from("plans").select("title").eq("id", m.plan_id).maybeSingle();
-            title = p?.title ?? "your plan";
-            planTitlesRef.current[m.plan_id] = title;
-          }
-
-          let senderName = profileNamesRef.current[m.user_id];
-          if (!senderName) {
-            const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", m.user_id).maybeSingle();
-            senderName = prof?.display_name ?? "Someone";
-            profileNamesRef.current[m.user_id] = senderName;
-          }
+          const [plan_title, sender_name] = await Promise.all([
+            lookupTitle(m.plan_id),
+            lookupName(m.user_id),
+          ]);
 
           const notif: Notification = {
             id: m.id,
             plan_id: m.plan_id,
-            plan_title: title,
-            sender_name: senderName,
+            plan_title,
+            sender_name,
             content: m.content,
             created_at: m.created_at,
             read: onThisPlan,
@@ -122,7 +111,7 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
           });
 
           if (!onThisPlan) {
-            toast(`${senderName} in ${title}`, {
+            toast(`${sender_name} in ${plan_title}`, {
               description: m.content.length > 80 ? m.content.slice(0, 80) + "…" : m.content,
               action: { label: "Open", onClick: () => navigate(`/plans/${m.plan_id}`) },
             });
@@ -131,18 +120,10 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
       )
       .subscribe();
 
-    // Refresh memberships when user joins/leaves or creates plans
-    const membershipChannel = supabase
-      .channel(`notif-memberships-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "plan_participants", filter: `user_id=eq.${user.id}` }, () => refreshMemberships())
-      .on("postgres_changes", { event: "*", schema: "public", table: "plans", filter: `user_id=eq.${user.id}` }, () => refreshMemberships())
-      .subscribe();
-
     return () => {
-      supabase.removeChannel(msgChannel);
-      supabase.removeChannel(membershipChannel);
+      supabase.removeChannel(channel);
     };
-  }, [user, navigate, refreshMemberships]);
+  }, [user, navigate]);
 
   // Auto-mark as read when viewing a plan
   useEffect(() => {

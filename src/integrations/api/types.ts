@@ -1,5 +1,3 @@
-// Shared app-level types (backed by Supabase tables).
-
 export type User = {
   id: string;
   email: string;
@@ -36,3 +34,5 @@ export type PlanMessage = {
   sender_name?: string;
   plan_title?: string;
 };
+
+export type AuthResponse = { token: string; user: User };

@@ -1,43 +1,68 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@/integrations/supabase/types";
 
 type AuthContextValue = {
   user: User | null;
-  session: Session | null;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// Map a Supabase session into our lightweight User shape.
+const toUser = (session: Session | null): User | null => {
+  const u = session?.user;
+  if (!u) return null;
+  return {
+    id: u.id,
+    email: u.email ?? "",
+    display_name: (u.user_metadata?.display_name as string | undefined) ?? null,
+  };
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
+    // Restore any existing session, then keep it in sync.
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(toUser(data.session));
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session: existing } }) => {
-      setSession(existing);
-      setUser(existing?.user ?? null);
-      setLoading(false);
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(toUser(session));
     });
 
-    return () => subscription.unsubscribe();
+    return () => sub.subscription.unsubscribe();
   }, []);
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+  };
+
+  const signUp = async (email: string, password: string, displayName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: displayName } },
+    });
+    if (error) throw new Error(error.message);
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -51,25 +51,32 @@ const PlanDetail = () => {
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const { data: planData, error } = await supabase.from("plans").select("*").eq("id", id).maybeSingle();
-    if (error || !planData) {
-      toast.error(error?.message ?? "Plan not found");
-      setLoading(false);
-      return;
-    }
-    setPlan(planData as Plan);
+    try {
+      const { data: planData, error } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      setPlan(planData);
 
-    const { data: parts } = await supabase.from("plan_participants").select("user_id").eq("plan_id", id);
-    const partIds = (parts ?? []).map((p) => p.user_id);
-    const allIds = Array.from(new Set([planData.user_id, ...partIds]));
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url, bio")
-      .in("id", allIds);
-    const byId: Record<string, Profile> = Object.fromEntries((profs ?? []).map((p) => [p.id, p as Profile]));
-    setHost(byId[planData.user_id] ?? { id: planData.user_id, display_name: null, avatar_url: null, bio: null });
-    setParticipants(partIds.map((pid) => byId[pid] ?? { id: pid, display_name: null, avatar_url: null, bio: null }));
-    setLoading(false);
+      const { data: parts } = await supabase
+        .from("plan_participants")
+        .select("user_id")
+        .eq("plan_id", id);
+      const partIds = (parts ?? []).map((p) => p.user_id);
+      const allIds = Array.from(new Set([planData.user_id, ...partIds]));
+      const { data: profs } = allIds.length
+        ? await supabase.from("profiles").select("id, display_name, avatar_url, bio").in("id", allIds)
+        : { data: [] as Profile[] };
+      const byId: Record<string, Profile> = Object.fromEntries((profs ?? []).map((p) => [p.id, p]));
+      setHost(byId[planData.user_id] ?? { id: planData.user_id, display_name: null, avatar_url: null, bio: null });
+      setParticipants(partIds.map((pid) => byId[pid] ?? { id: pid, display_name: null, avatar_url: null, bio: null }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Plan not found");
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
   useEffect(() => { if (user) load(); }, [user, load]);
@@ -81,18 +88,29 @@ const PlanDetail = () => {
   const toggleJoin = async () => {
     if (!user || !plan) return;
     setActing(true);
-    if (joined) {
-      const { error } = await supabase.from("plan_participants").delete().eq("plan_id", plan.id).eq("user_id", user.id);
-      if (error) { setActing(false); return toast.error(error.message); }
-      toast.success("Left the plan");
-    } else {
-      if (full) { setActing(false); return toast.error("Plan is full"); }
-      const { error } = await supabase.from("plan_participants").insert({ plan_id: plan.id, user_id: user.id });
-      if (error) { setActing(false); return toast.error(error.message); }
-      toast.success("You're in! 🎉");
+    try {
+      if (joined) {
+        const { error } = await supabase
+          .from("plan_participants")
+          .delete()
+          .eq("plan_id", plan.id)
+          .eq("user_id", user.id);
+        if (error) throw error;
+        toast.success("Left the plan");
+      } else {
+        if (full) { setActing(false); return toast.error("Plan is full"); }
+        const { error } = await supabase
+          .from("plan_participants")
+          .insert({ plan_id: plan.id, user_id: user.id });
+        if (error) throw error;
+        toast.success("You're in! 🎉");
+      }
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setActing(false);
     }
-    await load();
-    setActing(false);
   };
 
   const handleSignOut = async () => { await signOut(); navigate("/"); };
@@ -109,7 +127,7 @@ const PlanDetail = () => {
     );
   }
 
-  const initial = user.user_metadata?.display_name?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "U";
+  const initial = user.display_name?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "U";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/20">

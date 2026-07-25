@@ -47,27 +47,34 @@ const Plans = () => {
 
   const fetchPlans = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("plans")
-      .select("*, participants:plan_participants(user_id)")
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast.error(error.message);
+    try {
+      const { data: rows, error } = await supabase
+        .from("plans")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      const { data: parts } = await supabase
+        .from("plan_participants")
+        .select("plan_id, user_id");
+
+      const creatorIds = [...new Set((rows ?? []).map((p) => p.user_id))];
+      const { data: profs } = creatorIds.length
+        ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", creatorIds)
+        : { data: [] as { id: string; display_name: string | null; avatar_url: string | null }[] };
+      const profById = Object.fromEntries((profs ?? []).map((p) => [p.id, p]));
+
+      const assembled: Plan[] = (rows ?? []).map((p) => ({
+        ...p,
+        participants: (parts ?? []).filter((pp) => pp.plan_id === p.id).map((pp) => ({ user_id: pp.user_id })),
+        profile: profById[p.user_id] ?? null,
+      }));
+      setPlans(assembled);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load plans");
+    } finally {
       setLoading(false);
-      return;
     }
-    // fetch profiles for plan creators
-    const userIds = Array.from(new Set((data ?? []).map((p) => p.user_id)));
-    let profilesById: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
-    if (userIds.length) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url")
-        .in("id", userIds);
-      profilesById = Object.fromEntries((profs ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }]));
-    }
-    setPlans((data ?? []).map((p) => ({ ...p, profile: profilesById[p.user_id] ?? null })) as Plan[]);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -76,39 +83,71 @@ const Plans = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast.error("You must be signed in to post a plan.");
+      return;
+    }
     setSubmitting(true);
-    const { error } = await supabase.from("plans").insert({
-      user_id: user.id,
-      title,
-      description: description || null,
-      location: location || null,
-      plan_time: planTime ? new Date(planTime).toISOString() : null,
-      max_participants: maxParticipants,
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Plan posted!");
-    setOpen(false);
-    setTitle(""); setDescription(""); setLocation(""); setPlanTime(""); setMaxParticipants(4);
-    fetchPlans();
+    try {
+      const { data, error } = await supabase
+        .from("plans")
+        .insert({
+          user_id: user.id,
+          title,
+          description: description || null,
+          location: location || null,
+          plan_time: planTime ? new Date(planTime).toISOString() : null,
+          max_participants: maxParticipants,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      // `data` is the row Supabase actually persisted — proof it was stored.
+      console.info("[plans] stored plan:", data);
+      toast.success("Plan posted!");
+      setOpen(false);
+      setTitle(""); setDescription(""); setLocation(""); setPlanTime(""); setMaxParticipants(4);
+      fetchPlans();
+    } catch (err) {
+      // Surface the real reason storage failed instead of a generic message.
+      console.error("[plans] insert failed:", err);
+      const e = err as { code?: string; message?: string };
+      let msg = e.message ?? "Could not post plan";
+      if (e.code === "42P01" || /relation .*plans.* does not exist/i.test(msg)) {
+        msg = "The 'plans' table doesn't exist yet. Run supabase/migrations/0001_init.sql in the Supabase SQL Editor.";
+      } else if (e.code === "42501" || /row-level security/i.test(msg)) {
+        msg = "Blocked by row-level security — make sure you're signed in.";
+      }
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleJoin = async (plan: Plan) => {
     if (!user) return;
     const joined = plan.participants.some((p) => p.user_id === user.id);
-    if (joined) {
-      const { error } = await supabase.from("plan_participants").delete()
-        .eq("plan_id", plan.id).eq("user_id", user.id);
-      if (error) return toast.error(error.message);
-      toast.success("Left the plan");
-    } else {
-      if (plan.participants.length >= plan.max_participants) return toast.error("Plan is full");
-      const { error } = await supabase.from("plan_participants").insert({ plan_id: plan.id, user_id: user.id });
-      if (error) return toast.error(error.message);
-      toast.success("You're in! 🎉");
+    try {
+      if (joined) {
+        const { error } = await supabase
+          .from("plan_participants")
+          .delete()
+          .eq("plan_id", plan.id)
+          .eq("user_id", user.id);
+        if (error) throw error;
+        toast.success("Left the plan");
+      } else {
+        if (plan.participants.length >= plan.max_participants) return toast.error("Plan is full");
+        const { error } = await supabase
+          .from("plan_participants")
+          .insert({ plan_id: plan.id, user_id: user.id });
+        if (error) throw error;
+        toast.success("You're in! 🎉");
+      }
+      fetchPlans();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
     }
-    fetchPlans();
   };
 
   const handleSignOut = async () => {
@@ -120,7 +159,7 @@ const Plans = () => {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
-  const initial = user.user_metadata?.display_name?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "U";
+  const initial = user.display_name?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "U";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/20">
@@ -130,6 +169,9 @@ const Plans = () => {
             <span className="text-gradient">chillout</span>
           </Link>
           <div className="flex items-center gap-2">
+            <Link to="/chat" className="hidden sm:inline text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mr-2">
+              Video chat
+            </Link>
             <NotificationsBell />
             <Link to="/profile" className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm hover:opacity-90">
               {initial}

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MapPin, Users, Shield } from "lucide-react";
 import heroImage from "@/assets/hero-friends.jpg";
@@ -52,8 +53,8 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <Button variant="gradient" size="xl">
-              Get Started
+            <Button variant="gradient" size="xl" asChild>
+              <Link to="/chat">Get Started</Link>
             </Button>
             <Button variant="gradient-outline" size="xl">
               How it Works

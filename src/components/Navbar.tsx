@@ -16,20 +16,21 @@ const Navbar = () => {
     navigate("/");
   };
 
-  const initial = user?.user_metadata?.display_name?.[0]?.toUpperCase()
+  const initial = user?.display_name?.[0]?.toUpperCase()
     ?? user?.email?.[0]?.toUpperCase() ?? "U";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
       <div className="container mx-auto px-6 flex items-center justify-between h-16">
-        <Link to="/" className="text-xl font-extrabold tracking-tight">
+        <Link to={user ? "/app" : "/"} className="text-xl font-extrabold tracking-tight">
           <span className="text-gradient">chillout</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
+          {user && <Link to="/app" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Plans</Link>}
+          <Link to="/chat" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Video chat</Link>
           <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
           <a href="#safety" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Safety</a>
-          <a href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">About</a>
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -57,9 +58,10 @@ const Navbar = () => {
 
       {open && (
         <div className="md:hidden bg-background border-b border-border px-6 pb-6 space-y-4">
+          {user && <Link to="/app" className="block text-sm font-medium text-muted-foreground" onClick={() => setOpen(false)}>Plans</Link>}
+          <Link to="/chat" className="block text-sm font-medium text-muted-foreground" onClick={() => setOpen(false)}>Video chat</Link>
           <a href="#features" className="block text-sm font-medium text-muted-foreground">Features</a>
           <a href="#safety" className="block text-sm font-medium text-muted-foreground">Safety</a>
-          <a href="#" className="block text-sm font-medium text-muted-foreground">About</a>
           <div className="flex gap-3 pt-2">
             {user ? (
               <Button variant="gradient" size="sm" className="flex-1" onClick={handleSignOut}>Sign out</Button>
