@@ -108,7 +108,10 @@ const Auth = () => {
           </Tabs>
 
           <p className="text-xs text-center text-muted-foreground mt-6">
-            By continuing you agree to chillout's Terms & Privacy.
+            By continuing you agree to chillout's{" "}
+            <Link to="/terms" className="underline hover:text-foreground">Terms</Link>
+            {" & "}
+            <Link to="/privacy" className="underline hover:text-foreground">Privacy</Link>.
           </p>
         </div>
       </motion.div>

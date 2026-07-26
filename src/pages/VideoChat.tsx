@@ -325,7 +325,7 @@ const VideoChat = () => {
 
   // ----------------------------------------------------------------- view
   return (
-    <div className="flex h-screen flex-col bg-white">
+    <div className="flex h-[100dvh] flex-col bg-white">
       {/* slim top bar */}
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
         <Link to="/" className="text-lg font-extrabold">
@@ -345,9 +345,9 @@ const VideoChat = () => {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 gap-3 p-3">
-        {/* left: two stacked video tiles */}
-        <div className="flex w-[300px] shrink-0 flex-col gap-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-2 md:flex-row md:gap-3 md:p-3">
+        {/* videos: side-by-side row on mobile, stacked 300px column on desktop */}
+        <div className="flex w-full shrink-0 flex-row gap-2 md:w-[300px] md:flex-col md:gap-3">
           {/* remote (stranger) */}
           <div className="relative aspect-video flex-1 overflow-hidden rounded-xl bg-neutral-800">
             <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
@@ -400,21 +400,21 @@ const VideoChat = () => {
           </div>
 
           {/* bottom controls: Skip, Stop, input */}
-          <form onSubmit={sendMessage} className="flex items-center gap-2 border-t border-border p-3">
-            <Button type="button" variant="outline" className="h-11 rounded-lg px-6 font-semibold" onClick={handleNext} disabled={!!mediaError}>
+          <form onSubmit={sendMessage} className="flex items-center gap-1.5 border-t border-border p-2 md:gap-2 md:p-3">
+            <Button type="button" variant="outline" className="h-11 shrink-0 rounded-lg px-3 font-semibold md:px-6" onClick={handleNext} disabled={!!mediaError}>
               Skip
             </Button>
-            <Button type="button" variant="outline" className="h-11 gap-1 rounded-lg px-4" onClick={handleStop} disabled={!!mediaError}>
-              <Square className="h-4 w-4" /> Stop
+            <Button type="button" variant="outline" className="h-11 shrink-0 gap-1 rounded-lg px-3 md:px-4" onClick={handleStop} disabled={!!mediaError}>
+              <Square className="h-4 w-4" /> <span className="hidden sm:inline">Stop</span>
             </Button>
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Type a message..."
               disabled={status !== "connected"}
-              className="h-11 flex-1 rounded-lg border border-border bg-muted/40 px-4 text-sm outline-none focus:border-primary disabled:opacity-60"
+              className="h-11 w-0 min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-4 text-sm outline-none focus:border-primary disabled:opacity-60"
             />
-            <Button type="submit" variant="gradient" size="icon" className="h-11 w-11 rounded-lg" disabled={status !== "connected"}>
+            <Button type="submit" variant="gradient" size="icon" className="h-11 w-11 shrink-0 rounded-lg" disabled={status !== "connected"}>
               <Send className="h-4 w-4" />
             </Button>
           </form>

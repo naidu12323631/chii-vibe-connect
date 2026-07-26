@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import AvatarImg from "@/components/AvatarImg";
 import { toast } from "sonner";
 
 const Navbar = () => {
@@ -15,9 +16,6 @@ const Navbar = () => {
     toast.success("Signed out");
     navigate("/");
   };
-
-  const initial = user?.display_name?.[0]?.toUpperCase()
-    ?? user?.email?.[0]?.toUpperCase() ?? "U";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
@@ -36,8 +34,8 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
-              <Link to="/profile" className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm hover:opacity-90" aria-label="Profile">
-                {initial}
+              <Link to="/profile" className="h-9 w-9 overflow-hidden rounded-full hover:opacity-90" aria-label="Profile">
+                <AvatarImg url={user.avatar_url} name={user.display_name ?? user.email} />
               </Link>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" /> Sign out

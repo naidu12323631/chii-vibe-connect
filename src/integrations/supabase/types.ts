@@ -4,6 +4,7 @@ export type User = {
   id: string;
   email: string;
   display_name: string | null;
+  avatar_url?: string | null;
 };
 
 export type Profile = {
@@ -25,6 +26,20 @@ export type Plan = {
   max_participants: number;
   created_at: string;
   updated_at?: string;
+};
+
+export type Post = {
+  id: string;
+  user_id: string;
+  image_url: string;
+  caption: string | null;
+  created_at: string;
+};
+
+export type ProfileStats = {
+  posts: number;
+  followers: number;
+  following: number;
 };
 
 export type PlanMessage = {

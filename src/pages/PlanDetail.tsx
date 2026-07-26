@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import PlanChat from "@/components/PlanChat";
 import NotificationsBell from "@/components/NotificationsBell";
+import AvatarImg from "@/components/AvatarImg";
 
 type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null };
 type Plan = {
@@ -127,8 +128,6 @@ const PlanDetail = () => {
     );
   }
 
-  const initial = user.display_name?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "U";
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/20">
       <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
@@ -138,7 +137,7 @@ const PlanDetail = () => {
           </Link>
           <div className="flex items-center gap-2">
             <NotificationsBell />
-            <Link to="/profile" className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm hover:opacity-90">{initial}</Link>
+            <Link to="/profile" className="h-9 w-9 overflow-hidden rounded-full hover:opacity-90"><AvatarImg url={user.avatar_url} name={user.display_name ?? user.email} /></Link>
             <Button variant="ghost" size="sm" onClick={handleSignOut}><LogOut className="h-4 w-4" /></Button>
           </div>
         </div>
