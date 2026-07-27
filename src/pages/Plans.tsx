@@ -24,6 +24,7 @@ type Plan = {
   title: string;
   description: string | null;
   location: string | null;
+  maps_url: string | null;
   plan_time: string | null;
   max_participants: number;
   created_at: string;
@@ -92,6 +93,7 @@ const Plans = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [mapsUrl, setMapsUrl] = useState("");
   const [planTime, setPlanTime] = useState("");
   const [maxParticipants, setMaxParticipants] = useState(4);
 
@@ -173,6 +175,7 @@ const Plans = () => {
           title,
           description: description || null,
           location: location || null,
+          maps_url: mapsUrl.trim() || null,
           plan_time: planTime ? new Date(planTime).toISOString() : null,
           max_participants: maxParticipants,
         })
@@ -182,7 +185,7 @@ const Plans = () => {
       console.info("[plans] stored plan:", data);
       toast.success("Plan posted!");
       setOpen(false);
-      setTitle(""); setDescription(""); setLocation(""); setPlanTime(""); setMaxParticipants(4);
+      setTitle(""); setDescription(""); setLocation(""); setMapsUrl(""); setPlanTime(""); setMaxParticipants(4);
       fetchPlans();
     } catch (err) {
       console.error("[plans] insert failed:", err);
@@ -293,6 +296,18 @@ const Plans = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="maps">Google Maps link <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                  <Input
+                    id="maps"
+                    type="url"
+                    inputMode="url"
+                    value={mapsUrl}
+                    onChange={(e) => setMapsUrl(e.target.value)}
+                    placeholder="https://maps.app.goo.gl/..."
+                  />
+                  <p className="text-xs text-muted-foreground">Paste a share link from Google Maps so people can find the spot.</p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="max">Max participants</Label>
                   <Input id="max" type="number" min={2} max={50} value={maxParticipants} onChange={(e) => setMaxParticipants(parseInt(e.target.value) || 2)} />
                 </div>
@@ -371,6 +386,17 @@ const Plans = () => {
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
                           {plan.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {plan.location}</span>}
                           {plan.plan_time && <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {new Date(plan.plan_time).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</span>}
+                          {plan.maps_url && (
+                            <a
+                              href={plan.maps_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1 font-medium text-primary hover:underline"
+                            >
+                              <MapPin className="h-3.5 w-3.5" /> Map
+                            </a>
+                          )}
                         </div>
 
                         {/* capacity */}

@@ -325,7 +325,7 @@ const VideoChat = () => {
 
   // ----------------------------------------------------------------- view
   return (
-    <div className="flex h-[100dvh] flex-col bg-white">
+    <div className="flex h-[100dvh] flex-col bg-background">
       {/* slim top bar */}
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
         <Link to="/" className="text-lg font-extrabold">
@@ -346,32 +346,39 @@ const VideoChat = () => {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-2 md:flex-row md:gap-3 md:p-3">
-        {/* videos: side-by-side row on mobile, stacked 300px column on desktop */}
-        <div className="flex w-full shrink-0 flex-row gap-2 md:w-[300px] md:flex-col md:gap-3">
-          {/* remote (stranger) */}
-          <div className="relative aspect-video flex-1 overflow-hidden rounded-xl bg-neutral-800">
+        {/*
+          Mobile: big remote video with your camera as a floating PIP (top-right).
+          Desktop (md+): two stacked tiles in a 300px column (the original layout).
+          One set of <video> elements, reshaped with responsive classes.
+        */}
+        <div className="relative h-[42vh] w-full shrink-0 md:flex md:h-auto md:w-[300px] md:flex-col md:gap-3">
+          {/* remote (stranger) — fills the frame on mobile, a tile on desktop */}
+          <div className="absolute inset-0 overflow-hidden rounded-2xl bg-neutral-800 md:relative md:inset-auto md:aspect-video md:flex-1 md:rounded-xl">
             <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
-            {status !== "connected" && (
-              <div className="absolute inset-0 grid place-items-center">
-                {status === "searching" ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-white/70" />
+            {(status !== "connected" || mediaError) && (
+              <div className="absolute inset-0 grid place-items-center bg-neutral-900/70 p-6 text-center">
+                {mediaError ? (
+                  <p className="max-w-xs text-sm text-white/85">{mediaError}</p>
+                ) : status === "searching" ? (
+                  <div className="flex flex-col items-center gap-3 text-white/85">
+                    <Loader2 className="h-9 w-9 animate-spin" />
+                    <span className="text-sm font-medium">Finding someone…</span>
+                  </div>
                 ) : (
-                  <Button variant="gradient" size="sm" onClick={handleStart} disabled={!!mediaError}>
-                    Start
+                  <Button variant="gradient" size="lg" onClick={handleStart} disabled={!!mediaError}>
+                    Start chatting
                   </Button>
                 )}
               </div>
             )}
-            <button className="absolute bottom-2 right-2 text-white/70"><Flag className="h-4 w-4" /></button>
+            <button className="absolute bottom-3 right-3 rounded-full bg-black/40 p-2 text-white/80 backdrop-blur hover:text-white" title="Report">
+              <Flag className="h-4 w-4" />
+            </button>
           </div>
-          {/* local (you) */}
-          <div className="relative aspect-video flex-1 overflow-hidden rounded-xl bg-neutral-900">
+
+          {/* local (you) — floating PIP on mobile, stacked tile on desktop */}
+          <div className="absolute right-3 top-3 h-28 w-20 overflow-hidden rounded-xl border-2 border-white/70 bg-neutral-900 shadow-lg sm:h-32 sm:w-24 md:relative md:right-auto md:top-auto md:aspect-video md:h-auto md:w-full md:flex-1 md:rounded-xl md:border-0 md:shadow-none">
             <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover" />
-            {mediaError && (
-              <div className="absolute inset-0 grid place-items-center p-3 text-center text-xs text-white/80">
-                {mediaError}
-              </div>
-            )}
           </div>
         </div>
 

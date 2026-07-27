@@ -21,8 +21,11 @@ const HeroSection = () => {
             transition={{ duration: 0.7 }}
           >
             <span className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground mb-6">
-              <span className="h-2 w-2 rounded-full gradient-primary" />
-              Now in beta — join the vibe
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full gradient-primary" />
+              </span>
+              ✨ where gen-z & gen-alpha link up IRL
             </span>
           </motion.div>
 
@@ -43,8 +46,8 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            Feeling lonely or just wanna go out? chillout connects you with
-            real people nearby who share your vibe. Safe, easy, no pressure.
+            no more doomscrolling alone. chillout links you with real people
+            nearby who match your energy — make plans, hop on video, touch grass. 🌱
           </motion.p>
 
           <motion.div
@@ -54,10 +57,10 @@ const HeroSection = () => {
             transition={{ duration: 0.7, delay: 0.3 }}
           >
             <Button variant="gradient" size="xl" asChild>
-              <Link to="/chat">Get Started</Link>
+              <Link to="/auth">Get started — free</Link>
             </Button>
-            <Button variant="gradient-outline" size="xl">
-              How it Works
+            <Button variant="gradient-outline" size="xl" asChild>
+              <a href="#features">How it works</a>
             </Button>
           </motion.div>
 

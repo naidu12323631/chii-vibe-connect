@@ -8,8 +8,11 @@ import type { Post, Profile as ProfileData, ProfileStats } from "@/integrations/
 import Navbar from "@/components/Navbar";
 import ProfileHeader from "@/components/ProfileHeader";
 import PostGrid from "@/components/PostGrid";
+import UserPlans from "@/components/UserPlans";
 import { fetchStats } from "@/pages/Profile";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Grid3x3, CalendarDays } from "lucide-react";
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -119,6 +122,7 @@ const UserProfile = () => {
         <ProfileHeader
           profile={profile}
           stats={stats}
+          currentUserId={user?.id}
           actions={
             <Button
               variant={following ? "outline" : "gradient"}
@@ -130,8 +134,14 @@ const UserProfile = () => {
             </Button>
           }
         />
-        <hr className="my-8 border-border" />
-        <PostGrid posts={posts} />
+        <Tabs defaultValue="posts" className="mt-8">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="posts"><Grid3x3 className="mr-1.5 h-4 w-4" /> Posts</TabsTrigger>
+            <TabsTrigger value="plans"><CalendarDays className="mr-1.5 h-4 w-4" /> Plans</TabsTrigger>
+          </TabsList>
+          <TabsContent value="posts" className="mt-6"><PostGrid posts={posts} /></TabsContent>
+          <TabsContent value="plans" className="mt-6">{profile && <UserPlans userId={profile.id} />}</TabsContent>
+        </Tabs>
       </main>
     </div>
   );

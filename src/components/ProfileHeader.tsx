@@ -2,9 +2,11 @@ import type { ReactNode } from "react";
 import type { Profile, ProfileStats } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
 import AvatarImg from "@/components/AvatarImg";
+import FollowListStat from "@/components/FollowList";
 
 // Instagram-style profile header: avatar, name, stat counts, bio, interests.
 // `actions` renders the context button (Edit profile, or Follow/Unfollow).
+// Tapping followers / following opens a dialog listing those users.
 const Stat = ({ label, value }: { label: string; value: number }) => (
   <div className="text-center">
     <div className="text-lg font-bold tabular-nums">{value}</div>
@@ -16,10 +18,12 @@ const ProfileHeader = ({
   profile,
   stats,
   actions,
+  currentUserId,
 }: {
   profile: Profile;
   stats: ProfileStats;
   actions?: ReactNode;
+  currentUserId?: string;
 }) => {
   return (
     <div className="space-y-5">
@@ -39,8 +43,8 @@ const ProfileHeader = ({
           </div>
           <div className="flex max-w-xs justify-between gap-2">
             <Stat label="posts" value={stats.posts} />
-            <Stat label="followers" value={stats.followers} />
-            <Stat label="following" value={stats.following} />
+            <FollowListStat userId={profile.id} currentUserId={currentUserId} type="followers" label="followers" value={stats.followers} />
+            <FollowListStat userId={profile.id} currentUserId={currentUserId} type="following" label="following" value={stats.following} />
           </div>
         </div>
       </div>

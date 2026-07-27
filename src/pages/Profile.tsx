@@ -11,6 +11,10 @@ import PostGrid from "@/components/PostGrid";
 import NewPostDialog from "@/components/NewPostDialog";
 import AvatarImg from "@/components/AvatarImg";
 import AvatarPicker from "@/components/AvatarPicker";
+import UserPlans from "@/components/UserPlans";
+import ThemeToggle from "@/components/ThemeToggle";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Grid3x3, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -212,6 +216,7 @@ const Profile = () => {
             <ProfileHeader
               profile={profile}
               stats={stats}
+              currentUserId={user.id}
               actions={
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setEditing(true)}>Edit profile</Button>
@@ -219,8 +224,14 @@ const Profile = () => {
                 </div>
               }
             />
-            <hr className="my-8 border-border" />
-            <PostGrid posts={posts} canDelete onDelete={deletePost} />
+            <Tabs defaultValue="posts" className="mt-8">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="posts"><Grid3x3 className="mr-1.5 h-4 w-4" /> Posts</TabsTrigger>
+                <TabsTrigger value="plans"><CalendarDays className="mr-1.5 h-4 w-4" /> Plans</TabsTrigger>
+              </TabsList>
+              <TabsContent value="posts" className="mt-6"><PostGrid posts={posts} canDelete onDelete={deletePost} /></TabsContent>
+              <TabsContent value="plans" className="mt-6"><UserPlans userId={profile.id} /></TabsContent>
+            </Tabs>
           </>
         ) : (
           // ------------------------------------------------------ EDIT MODE
@@ -358,6 +369,16 @@ const Profile = () => {
                     );
                   })}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Appearance</CardTitle>
+                <CardDescription>Choose how chillout looks to you</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ThemeToggle />
               </CardContent>
             </Card>
 

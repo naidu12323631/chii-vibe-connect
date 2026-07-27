@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowLeft, Calendar, Loader2, LogOut, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2, LogOut, MapPin, Users, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ type Plan = {
   title: string;
   description: string | null;
   location: string | null;
+  maps_url: string | null;
   plan_time: string | null;
   max_participants: number;
   created_at: string;
@@ -114,6 +115,23 @@ const PlanDetail = () => {
     }
   };
 
+  // Host-only: remove a participant they don't want on the plan.
+  const removeParticipant = async (pid: string) => {
+    if (!plan) return;
+    try {
+      const { error } = await supabase
+        .from("plan_participants")
+        .delete()
+        .eq("plan_id", plan.id)
+        .eq("user_id", pid);
+      if (error) throw error;
+      toast.success("Participant removed");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove participant");
+    }
+  };
+
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
   if (authLoading || !user || loading) {
@@ -183,6 +201,17 @@ const PlanDetail = () => {
             </div>
           </div>
 
+          {plan.maps_url && (
+            <a
+              href={plan.maps_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-border p-3 text-sm font-medium text-primary transition-colors hover:bg-accent/40"
+            >
+              <MapPin className="h-4 w-4" /> Open in Google Maps <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+
           <div className="mt-8">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Host</h2>
             <div className="flex items-center gap-4">
@@ -202,11 +231,23 @@ const PlanDetail = () => {
               <div className="space-y-3">
                 {participants.map((p) => (
                   <div key={p.id} className="flex items-center gap-3 p-3 rounded-2xl border border-border">
-                    <Avatar name={p.display_name} url={p.avatar_url} />
-                    <div className="min-w-0">
+                    <Link to={p.id === user.id ? "/profile" : `/u/${p.id}`} className="shrink-0">
+                      <Avatar name={p.display_name} url={p.avatar_url} />
+                    </Link>
+                    <div className="min-w-0 flex-1">
                       <div className="font-medium text-sm">{p.display_name ?? "Member"}{p.id === user.id && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-accent font-normal">you</span>}</div>
                       {p.bio && <p className="text-xs text-muted-foreground truncate">{p.bio}</p>}
                     </div>
+                    {isOwner && p.id !== user.id && (
+                      <button
+                        onClick={() => removeParticipant(p.id)}
+                        className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        aria-label={`Remove ${p.display_name ?? "participant"}`}
+                        title="Remove participant"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
