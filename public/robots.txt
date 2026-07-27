@@ -54,5 +54,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap
-Sitemap: https://chilloutumingle.netlify.app/sitemap.xml
+Sitemap: https://chilloutumingle.vercel.app/sitemap.xml
