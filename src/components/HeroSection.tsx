@@ -25,7 +25,7 @@ const HeroSection = () => {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full gradient-primary" />
               </span>
-              ✨ where gen-z & gen-alpha link up IRL
+              ✨ where gen-z  link up IRL
             </span>
           </motion.div>
 
@@ -57,7 +57,7 @@ const HeroSection = () => {
             transition={{ duration: 0.7, delay: 0.3 }}
           >
             <Button variant="gradient" size="xl" asChild>
-              <Link to="/auth">Get started — free</Link>
+              <Link to="/chat">Get started — free</Link>
             </Button>
             <Button variant="gradient-outline" size="xl" asChild>
               <a href="#features">How it works</a>

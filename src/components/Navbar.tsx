@@ -27,6 +27,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-8">
           {user && <Link to="/app" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Plans</Link>}
           <Link to="/chat" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Video chat</Link>
+          <Link to="/feedback" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Feedback</Link>
           <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
           <a href="#safety" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Safety</a>
         </div>
@@ -58,6 +59,7 @@ const Navbar = () => {
         <div className="md:hidden bg-background border-b border-border px-6 pb-6 space-y-4">
           {user && <Link to="/app" className="block text-sm font-medium text-muted-foreground" onClick={() => setOpen(false)}>Plans</Link>}
           <Link to="/chat" className="block text-sm font-medium text-muted-foreground" onClick={() => setOpen(false)}>Video chat</Link>
+          <Link to="/feedback" className="block text-sm font-medium text-muted-foreground" onClick={() => setOpen(false)}>Feedback</Link>
           <a href="#features" className="block text-sm font-medium text-muted-foreground">Features</a>
           <a href="#safety" className="block text-sm font-medium text-muted-foreground">Safety</a>
           <div className="flex gap-3 pt-2">

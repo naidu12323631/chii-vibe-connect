@@ -118,6 +118,47 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
           }
         },
       )
+      // Join notifications: created server-side by the plan-join trigger on
+      // plan_participants. Fields are pre-denormalized, so no lookups needed.
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications" },
+        (payload) => {
+          const row = payload.new as {
+            id: string;
+            plan_id: string;
+            plan_title: string | null;
+            actor_name: string | null;
+            content: string;
+            created_at: string;
+          };
+
+          const match = matchPath("/plans/:id", locationRef.current.pathname);
+          const onThisPlan = match?.params?.id === row.plan_id;
+
+          const notif: Notification = {
+            id: row.id,
+            plan_id: row.plan_id,
+            plan_title: row.plan_title ?? "a plan",
+            sender_name: row.actor_name ?? "Someone",
+            content: row.content,
+            created_at: row.created_at,
+            read: onThisPlan,
+          };
+
+          setNotifications((prev) => {
+            if (prev.some((n) => n.id === notif.id)) return prev;
+            return [...prev, notif].slice(-50);
+          });
+
+          if (!onThisPlan) {
+            toast(`${notif.sender_name} · ${notif.plan_title}`, {
+              description: notif.content,
+              action: { label: "Open", onClick: () => navigate(`/plans/${row.plan_id}`) },
+            });
+          }
+        },
+      )
       .subscribe();
 
     return () => {

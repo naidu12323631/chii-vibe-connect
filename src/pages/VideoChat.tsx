@@ -5,9 +5,20 @@ import { Square, Flag, Send, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import FeedbackDialog from "@/components/FeedbackDialog";
+
+const ANON_FEEDBACK_KEY = "chillout:feedback:anon";
+const ANON_FEEDBACK_FIRST_MS = 30 * 1000;
+const ANON_FEEDBACK_INTERVAL_MS = 5 * 60 * 1000;
 
 type Status = "idle" | "searching" | "connected";
 type ChatMsg = { id: number; text: string; mine: boolean; time: string };
+
+type Country = { code: string; name: string; flag: string };
+type PartnerInfo = { country: string; flag: string; interests: string[] };
+type PresenceMeta = { at?: number; interests: string[]; country: string; flag: string };
+type SignalPayload = { type: string; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit };
 
 // Public STUN servers are enough for peer discovery on most networks.
 const RTC_CONFIG: RTCConfiguration = {
@@ -15,6 +26,36 @@ const RTC_CONFIG: RTCConfiguration = {
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
   ],
+};
+
+const COUNTRIES: Country[] = [
+  { code: "IN", name: "India", flag: "🇮🇳" },
+  { code: "US", name: "United States", flag: "🇺🇸" },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
+  { code: "CA", name: "Canada", flag: "🇨🇦" },
+  { code: "AU", name: "Australia", flag: "🇦🇺" },
+  { code: "AE", name: "UAE", flag: "🇦🇪" },
+  { code: "SG", name: "Singapore", flag: "🇸🇬" },
+  { code: "DE", name: "Germany", flag: "🇩🇪" },
+  { code: "FR", name: "France", flag: "🇫🇷" },
+  { code: "JP", name: "Japan", flag: "🇯🇵" },
+  { code: "BR", name: "Brazil", flag: "🇧🇷" },
+  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
+];
+
+// Best-guess home country from the browser locale (falls back to India).
+const detectCountry = (): Country => {
+  try {
+    const region = navigator.language.split("-")[1]?.toUpperCase();
+    if (region && region.length === 2) {
+      const known = COUNTRIES.find((c) => c.code === region);
+      if (known) return known;
+      const name = new Intl.DisplayNames(["en"], { type: "region" }).of(region);
+      const flag = String.fromCodePoint(...[...region].map((ch) => 127397 + ch.charCodeAt(0)));
+      return { code: region, name: name ?? region, flag };
+    }
+  } catch { /* ignore */ }
+  return { code: "IN", name: "India", flag: "🇮🇳" };
 };
 
 const nowTime = () =>
@@ -27,6 +68,14 @@ const VideoChat = () => {
   const localStreamRef = useRef<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const msgId = useRef(0);
+
+  // Pre-call preferences (interests drive matchmaking; country is just shown).
+  const interestsRef = useRef<string[]>([]);
+  const countryRef = useRef<Country>(detectCountry());
+  const [setupDone, setSetupDone] = useState(false);
+  const [myInterests, setMyInterests] = useState<string[]>([]);
+  const [interestInput, setInterestInput] = useState("");
+  const [myCountry, setMyCountry] = useState<Country>(detectCountry());
 
   // Realtime matchmaking state (serverless, via Supabase Realtime).
   const myId = useRef<string>(crypto.randomUUID());
@@ -43,6 +92,36 @@ const VideoChat = () => {
   const [draft, setDraft] = useState("");
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
+  const [partnerInfo, setPartnerInfo] = useState<PartnerInfo | null>(null);
+
+  // ---- Anonymous feedback: prompt signed-out users every 5 min (until filled).
+  const { user } = useAuth();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackDone, setFeedbackDone] = useState(false);
+
+  useEffect(() => {
+    if (user) return;
+    try {
+      if (localStorage.getItem(ANON_FEEDBACK_KEY) === "1") setFeedbackDone(true);
+    } catch { /* ignore */ }
+  }, [user]);
+
+  useEffect(() => {
+    if (user || feedbackDone) return;
+    const prompt = () => setFeedbackOpen(true);
+    const first = setTimeout(prompt, ANON_FEEDBACK_FIRST_MS);
+    const interval = setInterval(prompt, ANON_FEEDBACK_INTERVAL_MS);
+    return () => {
+      clearTimeout(first);
+      clearInterval(interval);
+    };
+  }, [user, feedbackDone]);
+
+  const handleAnonFeedbackSubmitted = () => {
+    try { localStorage.setItem(ANON_FEEDBACK_KEY, "1"); } catch { /* ignore */ }
+    setFeedbackDone(true);
+    setFeedbackOpen(false);
+  };
 
   // ---------------------------------------------------------------- WebRTC
   const teardownPeer = useCallback(() => {
@@ -86,7 +165,7 @@ const VideoChat = () => {
     return pc;
   }, [teardownPeer, sendSignal]);
 
-  const handleSignal = useCallback(async (data: any) => {
+  const handleSignal = useCallback(async (data: SignalPayload) => {
     const pc = pcRef.current;
     if (!pc) return;
     try {
@@ -112,6 +191,7 @@ const VideoChat = () => {
     offerSentRef.current = false;
     partnerRef.current = null;
     roomRef.current = null;
+    setPartnerInfo(null);
     if (pairRef.current) {
       supabase.removeChannel(pairRef.current);
       pairRef.current = null;
@@ -119,10 +199,11 @@ const VideoChat = () => {
   }, [teardownPeer]);
 
   // Open a dedicated broadcast channel with the matched partner and negotiate.
-  const startPair = useCallback((partnerId: string, initiator: boolean) => {
+  const startPair = useCallback((partnerId: string, initiator: boolean, meta?: PartnerInfo) => {
     partnerRef.current = partnerId;
     initiatorRef.current = initiator;
     offerSentRef.current = false;
+    setPartnerInfo(meta ?? null);
 
     // Leave the lobby — we're paired now.
     if (lobbyRef.current) {
@@ -167,21 +248,42 @@ const VideoChat = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createPeer, handleSignal]);
 
-  // Deterministic pairing: sort waiting peers, pair neighbours. The even-indexed
-  // peer invites the next one; the odd-indexed peer accepts. Message-driven
-  // commit (offer/ack) avoids both sides pairing with the wrong partner.
+  // Interest-based matching: only pair with a peer sharing at least one of the
+  // typed interests (case-insensitive). The peer with the lower id initiates,
+  // so both sides never invite each other.
   const tryMatch = useCallback(() => {
     const lobby = lobbyRef.current;
     if (!lobby || partnerRef.current) return;
-    const ids = Object.keys(lobby.presenceState()).sort();
-    const idx = ids.indexOf(myId.current);
-    if (idx < 0) return;
-    const partnerIdx = idx % 2 === 0 ? idx + 1 : idx - 1;
-    const partnerId = ids[partnerIdx];
-    if (!partnerId) return; // odd one out — keep waiting
-    if (idx % 2 === 0) {
-      // Invite the partner; commit only when they ack.
-      lobby.send({ type: "broadcast", event: "match-offer", payload: { from: myId.current, to: partnerId } });
+    const state = lobby.presenceState() as unknown as Record<string, PresenceMeta>;
+    const ids = Object.keys(state)
+      .filter((id) => id !== myId.current)
+      .sort();
+
+    const norm = (s: string) => s.trim().toLowerCase();
+    const sharedWith = (them: PresenceMeta | undefined) => {
+      if (!them?.interests) return 0;
+      const theirs = them.interests.map(norm);
+      return (interestsRef.current ?? []).filter((i) => theirs.includes(norm(i))).length;
+    };
+
+    const candidates = ids
+      .map((id) => ({ id, n: sharedWith(state[id]) }))
+      .filter((c) => c.n > 0)
+      .sort((a, b) => b.n - a.n || (a.id < b.id ? -1 : 1));
+    if (!candidates.length) return;
+
+    const best = candidates[0];
+    if (myId.current < best.id) {
+      const meta: PresenceMeta = {
+        interests: interestsRef.current,
+        country: countryRef.current.name,
+        flag: countryRef.current.flag,
+      };
+      lobby.send({
+        type: "broadcast",
+        event: "match-offer",
+        payload: { from: myId.current, to: best.id, meta },
+      });
     }
   }, []);
 
@@ -205,16 +307,28 @@ const VideoChat = () => {
       .on("broadcast", { event: "match-offer" }, ({ payload }) => {
         if (payload.to !== myId.current || partnerRef.current) return;
         // Accept the first invite we receive; become the responder.
-        lobby.send({ type: "broadcast", event: "match-ack", payload: { from: myId.current, to: payload.from } });
-        startPair(payload.from, false);
+        const meta: PresenceMeta = {
+          interests: interestsRef.current,
+          country: countryRef.current.name,
+          flag: countryRef.current.flag,
+        };
+        lobby.send({ type: "broadcast", event: "match-ack", payload: { from: myId.current, to: payload.from, meta } });
+        startPair(payload.from, false, payload.meta);
       })
       .on("broadcast", { event: "match-ack" }, ({ payload }) => {
         if (payload.to !== myId.current || partnerRef.current) return;
         // Our invite was accepted; become the initiator.
-        startPair(payload.from, true);
+        startPair(payload.from, true, payload.meta);
       })
       .subscribe(async (st) => {
-        if (st === "SUBSCRIBED") await lobby.track({ at: Date.now() });
+        if (st === "SUBSCRIBED") {
+          await lobby.track({
+            at: Date.now(),
+            interests: interestsRef.current,
+            country: countryRef.current.name,
+            flag: countryRef.current.flag,
+          });
+        }
       });
   }, [leavePair, tryMatch, startPair]);
 
@@ -249,7 +363,7 @@ const VideoChat = () => {
     };
   }, []);
 
-  // --------------------------------------------------- media + lobby boot
+  // --------------------------------------------------- media boot (no auto-match)
   useEffect(() => {
     let cancelled = false;
 
@@ -266,7 +380,6 @@ const VideoChat = () => {
         setMediaError("Camera & microphone access is needed to video chat. Please allow it and reload.");
         return;
       }
-      joinLobby();
     })();
 
     return () => {
@@ -279,11 +392,38 @@ const VideoChat = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The local <video> only mounts after the setup screen is dismissed. Attach
+  // the captured stream the moment the element is available (and on setup).
+  useEffect(() => {
+    if (localVideoRef.current && localStreamRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+  }, [setupDone]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // ------------------------------------------------------------- controls
+  const addInterest = () => {
+    const tag = interestInput.trim();
+    if (!tag) return;
+    if (myInterests.some((i) => i.toLowerCase() === tag.toLowerCase())) return;
+    setMyInterests((prev) => [...prev, tag]);
+    setInterestInput("");
+  };
+
+  const removeInterest = (tag: string) =>
+    setMyInterests((prev) => prev.filter((i) => i.toLowerCase() !== tag.toLowerCase()));
+
+  const handleSetupStart = () => {
+    if (myInterests.length === 0) return;
+    interestsRef.current = myInterests;
+    countryRef.current = myCountry;
+    setSetupDone(true);
+    joinLobby();
+  };
+
   const handleNext = () => {
     pairRef.current?.send({ type: "broadcast", event: "bye", payload: {} });
     leavePair();
@@ -323,6 +463,13 @@ const VideoChat = () => {
     }
   };
 
+  const sharedInterests =
+    partnerInfo && setupDone
+      ? (interestsRef.current ?? []).filter((i) =>
+          (partnerInfo.interests ?? []).some((t) => t.toLowerCase() === i.toLowerCase()),
+        )
+      : [];
+
   // ----------------------------------------------------------------- view
   return (
     <div className="flex h-[100dvh] flex-col bg-background">
@@ -345,88 +492,175 @@ const VideoChat = () => {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 p-2 md:flex-row md:gap-3 md:p-3">
-        {/*
-          Mobile: big remote video with your camera as a floating PIP (top-right).
-          Desktop (md+): two stacked tiles in a 300px column (the original layout).
-          One set of <video> elements, reshaped with responsive classes.
-        */}
-        <div className="relative h-[42vh] w-full shrink-0 md:flex md:h-auto md:w-[300px] md:flex-col md:gap-3">
-          {/* remote (stranger) — fills the frame on mobile, a tile on desktop */}
-          <div className="absolute inset-0 overflow-hidden rounded-2xl bg-neutral-800 md:relative md:inset-auto md:aspect-video md:flex-1 md:rounded-xl">
-            <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
-            {(status !== "connected" || mediaError) && (
-              <div className="absolute inset-0 grid place-items-center bg-neutral-900/70 p-6 text-center">
-                {mediaError ? (
-                  <p className="max-w-xs text-sm text-white/85">{mediaError}</p>
-                ) : status === "searching" ? (
-                  <div className="flex flex-col items-center gap-3 text-white/85">
-                    <Loader2 className="h-9 w-9 animate-spin" />
-                    <span className="text-sm font-medium">Finding someone…</span>
-                  </div>
-                ) : (
-                  <Button variant="gradient" size="lg" onClick={handleStart} disabled={!!mediaError}>
-                    Start chatting
-                  </Button>
-                )}
-              </div>
-            )}
-            <button className="absolute bottom-3 right-3 rounded-full bg-black/40 p-2 text-white/80 backdrop-blur hover:text-white" title="Report">
-              <Flag className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* local (you) — floating PIP on mobile, stacked tile on desktop */}
-          <div className="absolute right-3 top-3 h-28 w-20 overflow-hidden rounded-xl border-2 border-white/70 bg-neutral-900 shadow-lg sm:h-32 sm:w-24 md:relative md:right-auto md:top-auto md:aspect-video md:h-auto md:w-full md:flex-1 md:rounded-xl md:border-0 md:shadow-none">
-            <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover" />
-          </div>
-        </div>
-
-        {/* right: chat */}
-        <div className="flex min-w-0 flex-1 flex-col rounded-xl border border-border">
-          <div className="flex-1 space-y-2 overflow-y-auto p-4">
-            {status !== "connected" ? (
-              <p className="text-lg font-semibold text-foreground">
-                {status === "searching" ? "Searching for someone to chat with.." : "Press Start to begin"}
+      {!setupDone ? (
+        // ------------------------------------------------------ PRE-CALL SETUP
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4">
+          <div className="w-full max-w-md space-y-6 rounded-3xl border border-border bg-card p-8 shadow-xl">
+            <div className="text-center">
+              <h2 className="text-2xl font-extrabold tracking-tight">
+                Before we match you <span className="text-gradient">✨</span>
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Type your interests — we'll match you with people who share them.
+                Your country ({myCountry.flag} {myCountry.name}) is detected automatically and shown to your partner after connecting.
               </p>
-            ) : messages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">You're connected! Say hi 👋</p>
-            ) : null}
+            </div>
 
-            {messages.map((m) => (
-              <div key={m.id} className={cn("flex", m.mine ? "justify-end" : "justify-start")}>
-                <div className={cn(
-                  "max-w-[75%] rounded-2xl px-3 py-2 text-sm",
-                  m.mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
-                )}>
-                  {m.text}
-                </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">My interests</label>
+              <p className="text-xs text-muted-foreground">
+                Type what you're into and press Enter to add. We'll match you only with people who share it.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  value={interestInput}
+                  onChange={(e) => setInterestInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); addInterest(); }
+                    if (e.key === ",") { e.preventDefault(); addInterest(); }
+                  }}
+                  placeholder="e.g. rock climbing"
+                  className="h-10 flex-1 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+                />
+                <Button type="button" variant="outline" onClick={addInterest}>
+                  Add
+                </Button>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
+              {myInterests.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {myInterests.map((i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => removeInterest(i)}
+                      className="group inline-flex items-center gap-1.5 rounded-full gradient-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                      title="Remove"
+                    >
+                      {i}
+                      <span className="opacity-70 group-hover:opacity-100">×</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button variant="gradient" size="lg" className="w-full" onClick={handleSetupStart} disabled={myInterests.length === 0}>
+              {myInterests.length === 0 ? "Pick at least one interest" : "Start chatting"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-2 p-2 md:flex-row md:gap-3 md:p-3">
+          {/*
+            Mobile: big remote video with your camera as a floating PIP (top-right).
+            Desktop (md+): two stacked tiles in a 300px column (the original layout).
+            One set of <video> elements, reshaped with responsive classes.
+          */}
+          <div className="relative h-[42vh] w-full shrink-0 md:flex md:h-auto md:w-[300px] md:flex-col md:gap-3">
+            {/* remote (stranger) — fills the frame on mobile, a tile on desktop */}
+            <div className="absolute inset-0 overflow-hidden rounded-2xl bg-neutral-800 md:relative md:inset-auto md:aspect-video md:flex-1 md:rounded-xl">
+              <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
+
+              {/* partner banner: country + shared interests */}
+              {status === "connected" && partnerInfo && (
+                <div className="absolute inset-x-0 top-0 rounded-t-2xl bg-gradient-to-b from-black/70 to-transparent p-3 text-white md:rounded-t-xl">
+                  <p className="text-xs font-semibold">
+                    You're speaking with someone from {partnerInfo.flag} {partnerInfo.country}
+                  </p>
+                  {sharedInterests.length > 0 && (
+                    <p className="mt-0.5 text-[11px] text-white/85">
+                      You both like {sharedInterests.join(", ")}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(status !== "connected" || mediaError) && (
+                <div className="absolute inset-0 grid place-items-center bg-neutral-900/70 p-6 text-center">
+                  {mediaError ? (
+                    <p className="max-w-xs text-sm text-white/85">{mediaError}</p>
+                  ) : status === "searching" ? (
+                    <div className="flex flex-col items-center gap-3 text-white/85">
+                      <Loader2 className="h-9 w-9 animate-spin" />
+                      <span className="text-sm font-medium">Finding someone who shares your interests…</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Button variant="gradient" size="lg" onClick={handleStart} disabled={!!mediaError}>
+                        Start chatting
+                      </Button>
+                      <button
+                        className="text-xs text-white/70 underline-offset-2 hover:text-white hover:underline"
+                        onClick={() => setSetupDone(false)}
+                      >
+                        Change interests
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <button className="absolute bottom-3 right-3 rounded-full bg-black/40 p-2 text-white/80 backdrop-blur hover:text-white" title="Report">
+                <Flag className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* local (you) — floating PIP on mobile, stacked tile on desktop */}
+            <div className="absolute right-3 top-3 h-28 w-20 overflow-hidden rounded-xl border-2 border-white/70 bg-neutral-900 shadow-lg sm:h-32 sm:w-24 md:relative md:right-auto md:top-auto md:aspect-video md:h-auto md:w-full md:flex-1 md:rounded-xl md:border-0 md:shadow-none">
+              <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover" />
+            </div>
           </div>
 
-          {/* bottom controls: Skip, Stop, input */}
-          <form onSubmit={sendMessage} className="flex items-center gap-1.5 border-t border-border p-2 md:gap-2 md:p-3">
-            <Button type="button" variant="outline" className="h-11 shrink-0 rounded-lg px-3 font-semibold md:px-6" onClick={handleNext} disabled={!!mediaError}>
-              Skip
-            </Button>
-            <Button type="button" variant="outline" className="h-11 shrink-0 gap-1 rounded-lg px-3 md:px-4" onClick={handleStop} disabled={!!mediaError}>
-              <Square className="h-4 w-4" /> <span className="hidden sm:inline">Stop</span>
-            </Button>
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Type a message..."
-              disabled={status !== "connected"}
-              className="h-11 w-0 min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-4 text-sm outline-none focus:border-primary disabled:opacity-60"
-            />
-            <Button type="submit" variant="gradient" size="icon" className="h-11 w-11 shrink-0 rounded-lg" disabled={status !== "connected"}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
+          {/* right: chat */}
+          <div className="flex min-w-0 flex-1 flex-col rounded-xl border border-border">
+            <div className="flex-1 space-y-2 overflow-y-auto p-4">
+              {status !== "connected" ? (
+                <p className="text-lg font-semibold text-foreground">
+                  {status === "searching" ? "Searching for someone to chat with.." : "Press Start to begin"}
+                </p>
+              ) : messages.length === 0 ? (
+                <p className="text-sm text-muted-foreground">You're connected! Say hi 👋</p>
+              ) : null}
+
+              {messages.map((m) => (
+                <div key={m.id} className={cn("flex", m.mine ? "justify-end" : "justify-start")}>
+                  <div className={cn(
+                    "max-w-[75%] rounded-2xl px-3 py-2 text-sm",
+                    m.mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                  )}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* bottom controls: Skip, Stop, input */}
+            <form onSubmit={sendMessage} className="flex items-center gap-1.5 border-t border-border p-2 md:gap-2 md:p-3">
+              <Button type="button" variant="outline" className="h-11 shrink-0 rounded-lg px-3 font-semibold md:px-6" onClick={handleNext} disabled={!!mediaError}>
+                Skip
+              </Button>
+              <Button type="button" variant="outline" className="h-11 shrink-0 gap-1 rounded-lg px-3 md:px-4" onClick={handleStop} disabled={!!mediaError}>
+                <Square className="h-4 w-4" /> <span className="hidden sm:inline">Stop</span>
+              </Button>
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Type a message..."
+                disabled={status !== "connected"}
+                className="h-11 w-0 min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-4 text-sm outline-none focus:border-primary disabled:opacity-60"
+              />
+              <Button type="submit" variant="gradient" size="icon" className="h-11 w-11 shrink-0 rounded-lg" disabled={status !== "connected"}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Signed-out users get a feedback prompt every 5 min until they fill it. */}
+      {!user && (
+        <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} onSubmitted={handleAnonFeedbackSubmitted} />
+      )}
     </div>
   );
 };

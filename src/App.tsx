@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
+import { FeedbackProvider } from "@/hooks/useFeedback";
 import Index from "./pages/Index.tsx";
 import VideoChat from "./pages/VideoChat.tsx";
 import Auth from "./pages/Auth.tsx";
@@ -15,6 +16,7 @@ import Plans from "./pages/Plans.tsx";
 import PlanDetail from "./pages/PlanDetail.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import Terms from "./pages/Terms.tsx";
+import Feedback from "./pages/Feedback.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <NotificationsProvider>
+            <FeedbackProvider>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/chat" element={<VideoChat />} />
@@ -39,8 +42,10 @@ const App = () => (
               <Route path="/plans/:id" element={<PlanDetail />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/feedback" element={<Feedback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </FeedbackProvider>
           </NotificationsProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -9,6 +9,7 @@ const Footer = () => {
           <div className="flex gap-8 text-sm text-muted-foreground">
             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link to="/feedback" className="hover:text-foreground transition-colors">Feedback</Link>
             <a href="/#safety" className="hover:text-foreground transition-colors">Safety</a>
             <a href="mailto:support@chillout.example" className="hover:text-foreground transition-colors">Contact</a>
           </div>
