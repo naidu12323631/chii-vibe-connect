@@ -1,4 +1,4 @@
--- chillout schema for Supabase (Postgres).
+-- milo schema for Supabase (Postgres).
 -- Paste this whole file into the Supabase Dashboard → SQL Editor → Run.
 -- Auth is handled by Supabase Auth (auth.users); the tables below hold app data
 -- and are protected by Row Level Security (RLS).

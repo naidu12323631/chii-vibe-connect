@@ -242,7 +242,7 @@ const Plans = () => {
       {/* nav */}
       <nav className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <div className="container mx-auto flex h-16 items-center justify-between px-6">
-          <Link to="/app" className="text-xl font-extrabold tracking-tight"><span className="text-gradient">chillout</span></Link>
+          <Link to="/app" className="text-xl font-extrabold tracking-tight"><span className="text-gradient">milo</span></Link>
           <div className="flex items-center gap-2">
             <Link to="/chat" className="mr-2 hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline">Video chat</Link>
             <NotificationsBell />

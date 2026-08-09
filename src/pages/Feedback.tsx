@@ -52,7 +52,7 @@ const Feedback = () => {
                 className="mt-6"
                 onClick={() => {
                   // allow updating by clearing the cached flag
-                  try { localStorage.removeItem(`chillout:feedback:${user.id}`); } catch { /* ignore */ }
+                  try { localStorage.removeItem(`milo:feedback:${user.id}`); } catch { /* ignore */ }
                   openFeedback();
                 }}
               >
@@ -70,7 +70,7 @@ const Feedback = () => {
                 <MessageSquareHeart className="mx-auto mb-3 h-10 w-10 text-primary" />
                 <h1 className="text-2xl font-extrabold tracking-tight">Tell us how it's going</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Your thoughts help us make chillout better for everyone.
+                  Your thoughts help us make milo better for everyone.
                 </p>
               </div>
               <FeedbackForm />

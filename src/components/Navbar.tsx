@@ -21,7 +21,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/50">
       <div className="container mx-auto px-6 flex items-center justify-between h-16">
         <Link to={user ? "/app" : "/"} className="text-xl font-extrabold tracking-tight">
-          <span className="text-gradient">chillout</span>
+          <span className="text-gradient">Milo</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-8">

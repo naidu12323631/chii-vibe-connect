@@ -1,4 +1,4 @@
-// chillout push notifications service worker
+// milo push notifications service worker
 // No app-shell caching here — push-only worker.
 
 self.addEventListener("install", () => {
@@ -14,10 +14,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch (e) {
-    data = { title: "chillout", body: event.data ? event.data.text() : "" };
+    data = { title: "milo", body: event.data ? event.data.text() : "" };
   }
 
-  const title = data.title || "chillout";
+  const title = data.title || "milo";
   const options = {
     body: data.body || "",
     icon: data.icon || "/favicon.ico",

@@ -151,7 +151,7 @@ const PlanDetail = () => {
       <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="container mx-auto px-6 flex items-center justify-between h-16">
           <Link to="/app" className="text-xl font-extrabold tracking-tight">
-            <span className="text-gradient">chillout</span>
+            <span className="text-gradient">milo</span>
           </Link>
           <div className="flex items-center gap-2">
             <NotificationsBell />

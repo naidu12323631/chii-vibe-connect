@@ -3,12 +3,12 @@ import LegalPage from "@/components/LegalPage";
 const Terms = () => (
   <LegalPage title="Terms of Service" updated="July 26, 2026">
     <p>
-      These Terms govern your use of chillout. By creating an account or using the app,
-      you agree to them. If you don't agree, please don't use chillout.
+      These Terms govern your use of milo. By creating an account or using the app,
+      you agree to them. If you don't agree, please don't use milo.
     </p>
 
     <h2>Eligibility</h2>
-    <p>You must be at least 18 years old to use chillout and provide accurate information.</p>
+    <p>You must be at least 18 years old to use milo and provide accurate information.</p>
 
     <h2>Your account</h2>
     <p>
@@ -31,12 +31,12 @@ const Terms = () => (
 
     <h2>Disclaimer</h2>
     <p>
-      chillout is provided "as is" without warranties. We facilitate connections but aren't
+      milo is provided "as is" without warranties. We facilitate connections but aren't
       responsible for interactions between users. Meet safely.
     </p>
 
     <h2>Contact</h2>
-    <p>Questions about these Terms? Reach us at support@chillout.example.</p>
+    <p>Questions about these Terms? Reach us at support@milo.example.</p>
   </LegalPage>
 );
 

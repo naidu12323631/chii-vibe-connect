@@ -1,8 +1,8 @@
-// HTTP client for the chillout API (replaces the Supabase client).
+// HTTP client for the milo API (replaces the Supabase client).
 // Stores the JWT in localStorage and attaches it as a Bearer token.
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
-const TOKEN_KEY = "chillout:token";
+const TOKEN_KEY = "milo:token";
 
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),

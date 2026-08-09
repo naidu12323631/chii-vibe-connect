@@ -7,7 +7,7 @@ import FeedbackDialog from "@/components/FeedbackDialog";
 const FEEDBACK_INTERVAL_MS = 5 * 60 * 1000;
 // First prompt a few seconds after login so the app has time to settle.
 const FIRST_PROMPT_DELAY_MS = 5000;
-const STORAGE_KEY = "chillout:feedback";
+const STORAGE_KEY = "milo:feedback";
 
 type FeedbackContextValue = {
   hasSubmitted: boolean;

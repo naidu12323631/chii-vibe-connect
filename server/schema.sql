@@ -1,4 +1,4 @@
--- chillout schema for SQL Server (replaces the Supabase/Postgres schema).
+-- milo schema for SQL Server (replaces the Supabase/Postgres schema).
 -- Batches are separated by `GO`. db.js splits on GO and runs each batch.
 -- Arrays (interests/availability) are stored as JSON text and (de)serialized in the API layer.
 

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import FeedbackDialog from "@/components/FeedbackDialog";
 
-const ANON_FEEDBACK_KEY = "chillout:feedback:anon";
+const ANON_FEEDBACK_KEY = "milo:feedback:anon";
 const ANON_FEEDBACK_FIRST_MS = 30 * 1000;
 const ANON_FEEDBACK_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -260,6 +260,7 @@ const VideoChat = () => {
       .sort();
 
     const norm = (s: string) => s.trim().toLowerCase();
+    const hasInterests = (interestsRef.current ?? []).length > 0;
     const sharedWith = (them: PresenceMeta | undefined) => {
       if (!them?.interests) return 0;
       const theirs = them.interests.map(norm);
@@ -268,7 +269,7 @@ const VideoChat = () => {
 
     const candidates = ids
       .map((id) => ({ id, n: sharedWith(state[id]) }))
-      .filter((c) => c.n > 0)
+      .filter((c) => (hasInterests ? c.n > 0 : true))
       .sort((a, b) => b.n - a.n || (a.id < b.id ? -1 : 1));
     if (!candidates.length) return;
 
@@ -417,7 +418,6 @@ const VideoChat = () => {
     setMyInterests((prev) => prev.filter((i) => i.toLowerCase() !== tag.toLowerCase()));
 
   const handleSetupStart = () => {
-    if (myInterests.length === 0) return;
     interestsRef.current = myInterests;
     countryRef.current = myCountry;
     setSetupDone(true);
@@ -472,11 +472,18 @@ const VideoChat = () => {
 
   // ----------------------------------------------------------------- view
   return (
-    <div className="flex h-[100dvh] flex-col bg-background">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-background">
+      {!setupDone && (
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/30 blur-3xl" />
+          <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-purple-500/25 blur-3xl" />
+          <div className="absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-pink-500/20 blur-3xl" />
+        </div>
+      )}
       {/* slim top bar */}
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
+      <header className="relative flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
         <Link to="/" className="text-lg font-extrabold">
-          <span className="text-gradient">chillout</span>
+          <span className="text-gradient">milo</span>
         </Link>
         <div
           className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
@@ -494,23 +501,16 @@ const VideoChat = () => {
 
       {!setupDone ? (
         // ------------------------------------------------------ PRE-CALL SETUP
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4">
+        <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4">
           <div className="w-full max-w-md space-y-6 rounded-3xl border border-border bg-card p-8 shadow-xl">
             <div className="text-center">
               <h2 className="text-2xl font-extrabold tracking-tight">
-                Before we match you <span className="text-gradient">✨</span>
+                What are you interested in?
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Type your interests — we'll match you with people who share them.
-                Your country ({myCountry.flag} {myCountry.name}) is detected automatically and shown to your partner after connecting.
-              </p>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">My interests</label>
-              <p className="text-xs text-muted-foreground">
-                Type what you're into and press Enter to add. We'll match you only with people who share it.
-              </p>
               <div className="flex gap-2">
                 <input
                   value={interestInput}
@@ -544,13 +544,13 @@ const VideoChat = () => {
               )}
             </div>
 
-            <Button variant="gradient" size="lg" className="w-full" onClick={handleSetupStart} disabled={myInterests.length === 0}>
-              {myInterests.length === 0 ? "Pick at least one interest" : "Start chatting"}
+            <Button variant="gradient" size="lg" className="w-full" onClick={handleSetupStart}>
+              Start chatting
             </Button>
           </div>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 p-2 md:flex-row md:gap-3 md:p-3">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 p-2 md:flex-row md:gap-3 md:p-3">
           {/*
             Mobile: big remote video with your camera as a floating PIP (top-right).
             Desktop (md+): two stacked tiles in a 300px column (the original layout).

@@ -33,7 +33,7 @@ const CTASection = () => {
               asChild
             >
               <Link to="/chat">
-                Join chillout free
+                Join milo free
                 <ArrowRight className="h-5 w-5 ml-1" />
               </Link>
             </Button>

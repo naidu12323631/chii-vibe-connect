@@ -54,4 +54,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://chilloutumingle.vercel.app/sitemap.xml
+Sitemap: https://miloumingle.vercel.app/sitemap.xml

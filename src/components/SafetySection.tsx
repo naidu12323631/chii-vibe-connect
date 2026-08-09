@@ -28,7 +28,7 @@ const SafetySection = () => {
               Your safety, <span className="text-gradient">our priority</span>
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              We've built chillout with safety at its core — especially for women and
+              We've built milo with safety at its core — especially for women and
               vulnerable users. Every feature is designed so you feel comfortable and in control.
             </p>
 

@@ -81,7 +81,7 @@ const Auth = () => {
       >
         <div className="mb-6 text-center">
           <Link to="/" className="text-3xl font-extrabold tracking-tight">
-            <span className="text-gradient">chillout</span>
+            <span className="text-gradient">milo</span>
           </Link>
           <p className="mt-2 text-sm text-muted-foreground">
             your people are already here ✨ come vibe.
@@ -140,7 +140,7 @@ const Auth = () => {
           </Tabs>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            By continuing you agree to chillout's{" "}
+            By continuing you agree to milo's{" "}
             <Link to="/terms" className="underline hover:text-foreground">Terms</Link>
             {" & "}
             <Link to="/privacy" className="underline hover:text-foreground">Privacy</Link>.

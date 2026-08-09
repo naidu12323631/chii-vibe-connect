@@ -26,7 +26,7 @@ type NotificationsContextValue = {
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "chillout:notifications";
+const STORAGE_KEY = "milo:notifications";
 
 export const NotificationsProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();

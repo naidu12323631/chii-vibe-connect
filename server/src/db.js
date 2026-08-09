@@ -57,7 +57,7 @@ function buildConfig(database) {
   };
 }
 
-const config = buildConfig(process.env.DB_NAME || "chillout");
+const config = buildConfig(process.env.DB_NAME || "milo");
 
 let poolPromise;
 
@@ -112,10 +112,10 @@ export async function ensureSchema() {
 async function ensureDatabaseExists() {
   const masterPool = await new sql.ConnectionPool(buildConfig("master")).connect();
   try {
-    const dbName = (process.env.DB_NAME || "chillout").replace(/]/g, "]]");
+    const dbName = (process.env.DB_NAME || "milo").replace(/]/g, "]]");
     await masterPool
       .request()
-      .query(`IF DB_ID(N'${(process.env.DB_NAME || "chillout").replace(/'/g, "''")}') IS NULL CREATE DATABASE [${dbName}];`);
+      .query(`IF DB_ID(N'${(process.env.DB_NAME || "milo").replace(/'/g, "''")}') IS NULL CREATE DATABASE [${dbName}];`);
   } finally {
     await masterPool.close();
   }

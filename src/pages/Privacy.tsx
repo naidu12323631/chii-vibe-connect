@@ -3,8 +3,8 @@ import LegalPage from "@/components/LegalPage";
 const Privacy = () => (
   <LegalPage title="Privacy Policy" updated="July 26, 2026">
     <p>
-      This Privacy Policy explains how chillout ("we", "us") collects, uses, and protects
-      your information when you use the app. By using chillout, you agree to this policy.
+      This Privacy Policy explains how milo ("we", "us") collects, uses, and protects
+      your information when you use the app. By using milo, you agree to this policy.
     </p>
 
     <h2>Information we collect</h2>
@@ -32,7 +32,7 @@ const Privacy = () => (
     </p>
 
     <h2>Contact</h2>
-    <p>Questions about this policy? Reach us at support@chillout.example.</p>
+    <p>Questions about this policy? Reach us at support@milo.example.</p>
   </LegalPage>
 );
 

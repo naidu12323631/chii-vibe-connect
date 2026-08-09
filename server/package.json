@@ -1,9 +1,9 @@
 {
-  "name": "chillout-server",
+  "name": "milo-server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Auth + data API for chillout, backed by SQL Server (replaces Supabase).",
+  "description": "Auth + data API for milo, backed by SQL Server (replaces Supabase).",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

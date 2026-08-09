@@ -40,7 +40,7 @@ const NotificationsBell = () => {
                 {push.status === "denied"
                   ? "Blocked — enable in browser settings"
                   : push.subscribed
-                  ? "On — you'll be alerted even when chillout is closed"
+                  ? "On — you'll be alerted even when milo is closed"
                   : "Get notified when the app is closed"}
               </p>
             </div>

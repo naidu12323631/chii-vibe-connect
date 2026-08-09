@@ -375,7 +375,7 @@ const Profile = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">Appearance</CardTitle>
-                <CardDescription>Choose how chillout looks to you</CardDescription>
+                <CardDescription>Choose how milo looks to you</CardDescription>
               </CardHeader>
               <CardContent>
                 <ThemeToggle />

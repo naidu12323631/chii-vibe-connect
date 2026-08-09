@@ -46,7 +46,7 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            no more doomscrolling alone. chillout links you with real people
+            no more doomscrolling alone. milo links you with real people
             nearby who match your energy — make plans, hop on video, touch grass. 🌱
           </motion.p>
 

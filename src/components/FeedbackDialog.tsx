@@ -17,7 +17,7 @@ const FeedbackDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquareHeart className="h-5 w-5 text-primary" />
-            How's chillout going?
+            How's milo going?
           </DialogTitle>
           <DialogDescription>
             Tell us how your experience has been — it only takes a second.

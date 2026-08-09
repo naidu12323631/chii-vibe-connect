@@ -1,4 +1,4 @@
-# chillout server
+# milo server
 
 Express + SQL Server + bcrypt + JWT + Socket.IO API. Replaces the former Supabase backend
 (auth, database, realtime chat, notifications).
@@ -18,7 +18,7 @@ Express + SQL Server + bcrypt + JWT + Socket.IO API. Replaces the former Supabas
    - `DB_USER` / `DB_PASSWORD` — a SQL Server login. SQL auth must be enabled on the instance.
    - `JWT_SECRET` — a long random string (`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`).
 
-3. **Run** — the server auto-creates the `chillout` database and tables on boot:
+3. **Run** — the server auto-creates the `milo` database and tables on boot:
    ```bash
    npm run dev      # auto-restart on change
    # or: npm start

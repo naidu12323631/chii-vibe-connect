@@ -12,7 +12,7 @@ const corsHeaders = {
 const VAPID_PUBLIC_KEY =
   "BDaXu0DgYEmIK-NFLDg3DiXzzFJmqGHcjx0aRIXPv_dE5T0FZ2w0sjYIlUfuqPAEm0j9ASRBoJiOsU2Z1ie4l5k";
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:notifications@chillout.app";
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:notifications@milo.app";
 
 if (VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
