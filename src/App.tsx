@@ -18,8 +18,19 @@ import Privacy from "./pages/Privacy.tsx";
 import Terms from "./pages/Terms.tsx";
 import Feedback from "./pages/Feedback.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import SeoPage from "./pages/SeoPage.tsx";
 
 const queryClient = new QueryClient();
+
+const seoSlugs = [
+  "omegle-alternative",
+  "ometv-alternative",
+  "monkey-alternative",
+  "ummingle-alternative",
+  "random-chat-alternative",
+  "meet-people-nearby",
+  "make-new-friends",
+];
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -43,6 +54,9 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/feedback" element={<Feedback />} />
+              {seoSlugs.map((slug) => (
+                <Route key={slug} path={`/${slug}`} element={<SeoPage slug={slug} />} />
+              ))}
               <Route path="*" element={<NotFound />} />
             </Routes>
             </FeedbackProvider>

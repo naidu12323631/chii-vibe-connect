@@ -35,9 +35,9 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
           >
-            Find your <span className="text-gradient">people</span>,
+            Meet people. Make plans.
             <br />
-            make it <span className="text-gradient">happen</span>.
+            <span className="text-gradient">Go together.</span>
           </motion.h1>
 
           <motion.p
