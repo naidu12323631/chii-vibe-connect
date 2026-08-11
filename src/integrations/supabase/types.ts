@@ -60,3 +60,12 @@ export type PlanMessage = {
   sender_name?: string;
   plan_title?: string;
 };
+
+/** A one-to-one message. Backed by 0012_direct_messages.sql. */
+export type DirectMessage = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  content: string;
+  created_at: string;
+};

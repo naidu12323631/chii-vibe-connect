@@ -1,16 +1,29 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { Square, Flag, Send, Loader2, Users } from "lucide-react";
+import { Square, Flag, Send, Loader2, Users, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { normaliseInstagram, instagramUrl } from "@/lib/profileFields";
 import FeedbackDialog from "@/components/FeedbackDialog";
 
 const ANON_FEEDBACK_KEY = "milo:feedback:anon";
 const ANON_FEEDBACK_FIRST_MS = 30 * 1000;
 const ANON_FEEDBACK_INTERVAL_MS = 5 * 60 * 1000;
+
+// The handle is remembered per device so it only has to be typed once, but
+// sharing it is always a fresh decision — see instaShared below.
+const INSTA_KEY = "milo:insta-handle";
+
+const readStoredInsta = (): string | null => {
+  try {
+    return normaliseInstagram(localStorage.getItem(INSTA_KEY) ?? "");
+  } catch {
+    return null;
+  }
+};
 
 type Status = "idle" | "searching" | "connected";
 type ChatMsg = { id: number; text: string; mine: boolean; time: string };
@@ -94,6 +107,15 @@ const VideoChat = () => {
   const [onlineCount, setOnlineCount] = useState(0);
   const [partnerInfo, setPartnerInfo] = useState<PartnerInfo | null>(null);
 
+  // ---- Opt-in Instagram reveal. Each side decides separately, per match:
+  // your handle only leaves the device when you press the button, and theirs
+  // only appears if they press theirs. Both reset on every new partner.
+  const [myInsta, setMyInsta] = useState<string | null>(() => readStoredInsta());
+  const [instaShared, setInstaShared] = useState(false);
+  const [partnerInsta, setPartnerInsta] = useState<string | null>(null);
+  const [instaEditing, setInstaEditing] = useState(false);
+  const [instaInput, setInstaInput] = useState("");
+
   // ---- Anonymous feedback: prompt signed-out users every 5 min (until filled).
   const { user } = useAuth();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -122,6 +144,24 @@ const VideoChat = () => {
     setFeedbackDone(true);
     setFeedbackOpen(false);
   };
+
+  // Signed-in users who already saved a handle on their profile don't retype it.
+  // Only prefills — nothing is sent anywhere until the reveal button is pressed.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("instagram")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const handle = normaliseInstagram(data?.instagram ?? "");
+        if (handle) setMyInsta((cur) => cur ?? handle);
+      });
+    return () => { cancelled = true; };
+  }, [user]);
 
   // ---------------------------------------------------------------- WebRTC
   const teardownPeer = useCallback(() => {
@@ -192,6 +232,10 @@ const VideoChat = () => {
     partnerRef.current = null;
     roomRef.current = null;
     setPartnerInfo(null);
+    // A reveal never carries over to the next stranger — both sides opt in again.
+    setInstaShared(false);
+    setPartnerInsta(null);
+    setInstaEditing(false);
     if (pairRef.current) {
       supabase.removeChannel(pairRef.current);
       pairRef.current = null;
@@ -225,6 +269,11 @@ const VideoChat = () => {
       .on("broadcast", { event: "signal" }, ({ payload }) => handleSignal(payload))
       .on("broadcast", { event: "chat" }, ({ payload }) => {
         setMessages((m) => [...m, { id: msgId.current++, text: payload.text, mine: false, time: nowTime() }]);
+      })
+      // The partner pressed their reveal button — only now do we have a handle.
+      .on("broadcast", { event: "insta" }, ({ payload }) => {
+        const handle = normaliseInstagram(String(payload?.handle ?? ""));
+        if (handle) setPartnerInsta(handle);
       })
       .on("broadcast", { event: "bye" }, () => handlePartnerLeft())
       .on("presence", { event: "sync" }, () => {
@@ -443,6 +492,30 @@ const VideoChat = () => {
 
   const handleStart = () => joinLobby();
 
+  // ---- Instagram reveal
+  const revealInsta = (handle: string) => {
+    pairRef.current?.send({ type: "broadcast", event: "insta", payload: { handle } });
+    setInstaShared(true);
+    setInstaEditing(false);
+  };
+
+  // Straight to the reveal when we already know the handle, otherwise ask first.
+  const handleShowInsta = () => {
+    if (status !== "connected") return;
+    if (myInsta) { revealInsta(myInsta); return; }
+    setInstaInput("");
+    setInstaEditing(true);
+  };
+
+  const handleSaveInsta = (e: React.FormEvent) => {
+    e.preventDefault();
+    const handle = normaliseInstagram(instaInput);
+    if (!handle) return;
+    setMyInsta(handle);
+    try { localStorage.setItem(INSTA_KEY, handle); } catch { /* ignore */ }
+    revealInsta(handle);
+  };
+
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
@@ -633,6 +706,69 @@ const VideoChat = () => {
               ))}
               <div ref={messagesEndRef} />
             </div>
+
+            {/*
+              Opt-in Instagram swap. Sits above the composer so the video tiles
+              keep their exact mobile/desktop layout. Only while connected —
+              there's nobody to reveal to otherwise.
+            */}
+            {status === "connected" && (
+              <div className="flex flex-wrap items-center gap-2 border-t border-border px-2 py-2 md:px-3">
+                {instaEditing ? (
+                  <form onSubmit={handleSaveInsta} className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <Instagram className="h-4 w-4 shrink-0 text-rose-500" />
+                    <input
+                      value={instaInput}
+                      onChange={(e) => setInstaInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Escape") setInstaEditing(false); }}
+                      placeholder="Your Instagram username"
+                      aria-label="Your Instagram username"
+                      autoFocus
+                      className="h-9 w-0 min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-3 text-sm outline-none focus:border-primary"
+                    />
+                    <Button type="submit" variant="gradient" size="sm" className="h-9 shrink-0 rounded-lg" disabled={!normaliseInstagram(instaInput)}>
+                      Share
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-9 shrink-0 rounded-lg" onClick={() => setInstaEditing(false)}>
+                      Cancel
+                    </Button>
+                  </form>
+                ) : instaShared ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                    <Instagram className="h-3.5 w-3.5 text-rose-500" />
+                    Shared @{myInsta}
+                  </span>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0 gap-1.5 rounded-full px-3 text-xs font-semibold"
+                    onClick={handleShowInsta}
+                  >
+                    <Instagram className="h-3.5 w-3.5 text-rose-500" />
+                    Show my Insta ID
+                  </Button>
+                )}
+
+                {/* Theirs stays hidden until they press their own button. */}
+                {partnerInsta ? (
+                  <a
+                    href={instagramUrl(partnerInsta)}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-center gap-1.5 rounded-full gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                  >
+                    <Instagram className="h-3.5 w-3.5" />
+                    @{partnerInsta}
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    Their Insta ID shows up only if they share it
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* bottom controls: Skip, Stop, input */}
             <form onSubmit={sendMessage} className="flex items-center gap-1.5 border-t border-border p-2 md:gap-2 md:p-3">

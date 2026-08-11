@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import AvatarImg from "@/components/AvatarImg";
+import { cn } from "@/lib/utils";
 
 type Row = { id: string; display_name: string | null; avatar_url: string | null };
 
@@ -15,12 +16,19 @@ const FollowListStat = ({
   type,
   label,
   value,
+  className,
+  valueClassName,
+  labelClassName,
 }: {
   userId: string;
   currentUserId?: string;
   type: "followers" | "following";
   label: string;
   value: number;
+  /** Overrides let the same stat sit in the profile hero's counter row. */
+  className?: string;
+  valueClassName?: string;
+  labelClassName?: string;
 }) => {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -50,9 +58,9 @@ const FollowListStat = ({
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) loadList(); }}>
       <DialogTrigger asChild>
-        <button type="button" className="text-center transition-opacity hover:opacity-70">
-          <div className="text-lg font-bold tabular-nums">{value}</div>
-          <div className="text-xs text-muted-foreground">{label}</div>
+        <button type="button" className={cn("text-center transition-opacity hover:opacity-70", className)}>
+          <div className={cn("text-lg font-bold tabular-nums", valueClassName)}>{value}</div>
+          <div className={cn("text-xs text-muted-foreground", labelClassName)}>{label}</div>
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

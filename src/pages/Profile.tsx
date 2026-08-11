@@ -159,8 +159,31 @@ const Profile = () => {
         online={onlineIds.has(user.id)}
         posts={stats.posts}
         plansCreated={myPlans.length}
-        saved={savedPlans.length}
         followers={stats.followers}
+        followersStat={
+          <FollowListStat
+            userId={profile.id}
+            currentUserId={user.id}
+            type="followers"
+            label="Followers"
+            value={stats.followers}
+            className="flex-1 px-2"
+            valueClassName="text-xl font-extrabold"
+            labelClassName="text-[13px]"
+          />
+        }
+        followingStat={
+          <FollowListStat
+            userId={profile.id}
+            currentUserId={user.id}
+            type="following"
+            label="Following"
+            value={stats.following}
+            className="flex-1 px-2"
+            valueClassName="text-xl font-extrabold"
+            labelClassName="text-[13px]"
+          />
+        }
         onEdit={() => setEditing(true)}
         onNewPlan={openCreate}
         onJumpTo={jumpTo}
@@ -274,12 +297,6 @@ const Profile = () => {
         )}
       </section>
 
-      {/* Followers / following stay reachable — the hero shows the three counts
-          from the design instead. */}
-      <div className="mt-8 flex justify-center gap-6 border-t border-border pt-6">
-        <FollowListStat userId={profile.id} currentUserId={user.id} type="followers" label="followers" value={stats.followers} />
-        <FollowListStat userId={profile.id} currentUserId={user.id} type="following" label="following" value={stats.following} />
-      </div>
     </main>
   );
 };

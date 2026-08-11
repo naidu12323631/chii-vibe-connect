@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Instagram, Link2, MapPin, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AvatarImg from "@/components/AvatarImg";
@@ -38,7 +39,10 @@ const Stat = ({ label, value, onClick }: { label: string; value: number; onClick
 
 /**
  * Profile hero: avatar with an online dot, name and handle, bio, the two action
- * buttons, and the Posts / Plans created / Saved counts.
+ * buttons, and the Posts / Plans / Followers / Following counts.
+ *
+ * The follow counters arrive as slots because they open a dialog and fetch their
+ * own lists — this component stays presentational.
  */
 const ProfileHero = ({
   profile,
@@ -46,8 +50,9 @@ const ProfileHero = ({
   online,
   posts,
   plansCreated,
-  saved,
   followers,
+  followersStat,
+  followingStat,
   onEdit,
   onNewPlan,
   onJumpTo,
@@ -57,9 +62,10 @@ const ProfileHero = ({
   online?: boolean;
   posts: number;
   plansCreated: number;
-  saved: number;
   /** Drives the trust badge next to the name. */
   followers: number;
+  followersStat?: ReactNode;
+  followingStat?: ReactNode;
   onEdit: () => void;
   onNewPlan: () => void;
   onJumpTo: (section: "posts" | "plans" | "saved") => void;
@@ -137,10 +143,12 @@ const ProfileHero = ({
       </div>
     </div>
 
+    {/* Four counters, so the labels are kept short enough for a phone. */}
     <div className="mt-4 flex items-stretch divide-x divide-border">
       <Stat label="Posts" value={posts} onClick={() => onJumpTo("posts")} />
-      <Stat label="Plans created" value={plansCreated} onClick={() => onJumpTo("plans")} />
-      <Stat label="Saved" value={saved} onClick={() => onJumpTo("saved")} />
+      <Stat label="Plans" value={plansCreated} onClick={() => onJumpTo("plans")} />
+      {followersStat}
+      {followingStat}
     </div>
   </div>
 );

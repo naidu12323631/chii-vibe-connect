@@ -18,6 +18,7 @@ import Home from "./pages/Home.tsx";
 import Explore from "./pages/Explore.tsx";
 import MapsPage from "./pages/MapsPage.tsx";
 import Chats from "./pages/Chats.tsx";
+import DirectChat from "./pages/DirectChat.tsx";
 import PlanDetail from "./pages/PlanDetail.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import Terms from "./pages/Terms.tsx";
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/maps" element={<MapsPage />} />
                 <Route path="/chats" element={<Chats />} />
+                <Route path="/dm/:id" element={<DirectChat />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="/plans/:id" element={<PlanDetail />} />
