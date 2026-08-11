@@ -41,7 +41,7 @@ const HeroArt = () => {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute right-0 top-0 origin-top-right select-none scale-[0.78] sm:scale-100"
+      className="pointer-events-none absolute right-0 top-0 origin-top-right select-none scale-[0.78] sm:scale-100 overflow-hidden rounded-none"
     >
       {broken ? (
         <FallbackArt />
@@ -50,7 +50,8 @@ const HeroArt = () => {
           src={heroFamily}
           alt=""
           onError={() => setBroken(true)}
-          className="h-28 w-auto max-w-[180px] object-contain object-right-top"
+          className="block h-28 w-auto max-w-[180px] object-contain object-right-top bg-transparent"
+          style={{ backgroundColor: "transparent" }}
         />
       )}
     </div>
