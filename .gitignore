@@ -1,0 +1,57 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment / secrets — never commit real keys
+.env
+.env.*
+!.env.example
+
+# Supabase local CLI artifacts
+.supabase/
+supabase/.branches
+supabase/.temp
+
+# Build / cache / coverage
+.vite/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Capacitor native shells. The android/ and ios/ projects ARE committed (they
+# hold app config and icons); these are generated or machine-specific.
+ios/App/Pods/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+ios/DerivedData/
+.gradle/
+*.keystore
+!debug.keystore
+
+# OS / OneDrive / Windows junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
