@@ -5,8 +5,9 @@ const url = import.meta.env.VITE_SUPABASE_URL as string;
 const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 if (!url || !anonKey) {
-  // Fail loudly in dev if the env vars are missing.
-  console.error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in .env");
+  throw new Error(
+    "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to the build environment (see .env.example)."
+  );
 }
 
 export const supabase = createClient(url, anonKey, {
