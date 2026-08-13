@@ -1,0 +1,4 @@
+# Keep shell scripts executable on Linux CI (Gradle wrapper).
+*.sh text eol=lf
+android/gradlew text eol=lf
+*.bat text eol=crlf
