@@ -1,0 +1,87 @@
+name: Build Android APK
+
+# Builds the Android app and publishes the APK as a rolling "continuous" GitHub
+# Release, so the landing-page download button can always point at
+# https://github.com/<owner>/<repo>/releases/latest/download/milo.apk
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform + build tools
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Restore signing keystore
+        id: keystore-cache
+        uses: actions/cache@v4
+        with:
+          path: android/release.keystore
+          key: milo-release-keystore-v1
+
+      - name: Generate release keystore
+        if: steps.keystore-cache.outputs.cache-hit != 'true'
+        run: |
+          "$JAVA_HOME/bin/keytool" -genkeypair -v \
+            -keystore android/release.keystore \
+            -alias milo -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "milo-release" -keypass "milo-release" \
+            -dname "CN=milo, OU=milo, O=milo, L=City, S=State, C=US"
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease
+        working-directory: android
+
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/release/app-release.apk milo.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: milo-apk
+          path: milo.apk
+
+      - name: Publish to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view continuous >/dev/null 2>&1 && gh release delete continuous --yes || true
+          gh release create continuous milo.apk \
+            --title "milo for Android" \
+            --latest \
+            --notes "Latest Android build of milo. Download the APK and install it on your device."
