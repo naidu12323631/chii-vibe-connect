@@ -16,8 +16,20 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        // CI signs releases with android/release.keystore (see the
+        // build-android.yml workflow). Locally, point KEYSTORE_FILE and friends
+        // at your own keystore.
+        release {
+            storeFile file(System.getenv("KEYSTORE_FILE") ?: "../release.keystore")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "milo-release"
+            keyAlias System.getenv("KEY_ALIAS") ?: "milo"
+            keyPassword System.getenv("KEY_PASSWORD") ?: "milo-release"
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

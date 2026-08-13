@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MapPin, Users, Shield } from "lucide-react";
+import { MapPin, Users, Shield, Download } from "lucide-react";
 import heroImage from "@/assets/hero-friends.jpg";
+import { ANDROID_APK_URL } from "@/lib/apk";
 
 const HeroSection = () => {
   return (
@@ -58,6 +59,11 @@ const HeroSection = () => {
           >
             <Button variant="gradient" size="xl" asChild>
               <Link to="/chat">Get started — free</Link>
+            </Button>
+            <Button variant="gradient-outline" size="xl" asChild>
+              <a href={ANDROID_APK_URL} download>
+                <Download className="h-5 w-5 mr-2" /> Download app for Android
+              </a>
             </Button>
             <Button variant="gradient-outline" size="xl" asChild>
               <a href="#features">How it works</a>

@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Download } from "lucide-react";
+import { ANDROID_APK_URL } from "@/lib/apk";
 
 const CTASection = () => {
   return (
@@ -27,16 +28,28 @@ const CTASection = () => {
             <p className="text-primary-foreground/80 text-lg max-w-md mx-auto mb-8">
               Join thousands of people who chose real connections over loneliness.
             </p>
-            <Button
-              size="xl"
-              className="bg-background text-foreground hover:bg-background/90 shadow-lg font-bold rounded-full"
-              asChild
-            >
-              <Link to="/chat">
-                Join milo free
-                <ArrowRight className="h-5 w-5 ml-1" />
-              </Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button
+                size="xl"
+                className="bg-background text-foreground hover:bg-background/90 shadow-lg font-bold rounded-full"
+                asChild
+              >
+                <Link to="/chat">
+                  Join milo free
+                  <ArrowRight className="h-5 w-5 ml-1" />
+                </Link>
+              </Button>
+              <Button
+                size="xl"
+                variant="outline"
+                className="border-primary-foreground/40 text-primary-foreground hover:bg-white/10 rounded-full font-bold"
+                asChild
+              >
+                <a href={ANDROID_APK_URL} download>
+                  <Download className="h-5 w-5 mr-2" /> Download Android app
+                </a>
+              </Button>
+            </div>
           </div>
         </motion.div>
       </div>

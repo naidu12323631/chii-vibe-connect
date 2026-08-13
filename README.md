@@ -78,6 +78,16 @@ npm run cap:android     # build + sync + open Android Studio
 Build a release AAB from Android Studio (Build → Generate Signed Bundle) with
 your own keystore.
 
+#### CI-built APK
+
+`.github/workflows/build-android.yml` builds a signed release APK on every push
+to `main` and publishes it as a rolling `continuous` GitHub Release. The landing
+page links to it via `src/lib/apk.ts`
+(`/releases/latest/download/milo.apk`). Trigger a build any time from the
+Actions tab (`workflow_dispatch`). The signing keystore is cached between runs,
+so installed apps keep their signature; if the cache is ever evicted a new
+keystore is generated and existing installs must be uninstalled first.
+
 ### iOS
 
 The `ios/` project is **not** generated yet — it needs macOS, because CocoaPods
