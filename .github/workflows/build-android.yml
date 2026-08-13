@@ -45,9 +45,16 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
         run: |
+          test -n "$VITE_SUPABASE_URL" \
+            || echo "::error::MISSING secret: VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" \
+            || echo "::error::MISSING secret: VITE_SUPABASE_PUBLISHABLE_KEY"
+          test -n "$VITE_SUPABASE_PROJECT_ID" \
+            || echo "::error::MISSING secret: VITE_SUPABASE_PROJECT_ID"
           test -n "$VITE_SUPABASE_URL" && test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" \
-            || { echo "::error::Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY as repository secrets (Settings -> Secrets and variables -> Actions). The APK is built without a .env, so the app would otherwise crash on a white screen."; exit 1; }
+            || { echo "::error::Add the missing secrets under Settings -> Secrets and variables -> Actions -> Secrets (the Secrets tab, not Variables)."; exit 1; }
 
       - name: Build web app
         env:
